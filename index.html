@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CactusDrop - Anonymes & Sicheres Filesharing</title>
+    
+    <!-- PWA & SEO -->
+    <meta name="description" content="Sicheres & anonymes Filesharing mit End-to-End-Verschlüsselung.">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2f855a">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+
+    <!-- Styles & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .dragover { border-color: #2f855a; background-color: rgba(47, 133, 90, 0.1); }
+        .countdown-segment { background-color: #2d3748; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div id="app" class="w-full max-w-md mx-auto">
+        
+        <header class="text-center mb-8">
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#2f855a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-cactus-green">
+                    <path d="M12 9V2m0 7v13m0-13c-2.833 0-5 2.167-5 5v0c0 2.833 2.167 5 5 5m0-10c2.833 0 5 2.167 5 5v0c0 2.833-2.167 5-5 5m-5 5h10"/>
+                </svg>
+                <h1 class="text-4xl font-bold text-gray-100">Cactus<span class="text-green-500">Drop</span></h1>
+            </div>
+            <p class="text-gray-400">Dateien mit End-to-End-Verschlüsselung teilen.</p>
+        </header>
+
+        <main id="main-content" class="w-full bg-gray-800 rounded-2xl shadow-lg p-6 transition-all duration-300">
+            
+            <div id="upload-view">
+                <div id="drop-zone" class="relative w-full h-48 border-2 border-dashed border-gray-600 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 hover:border-green-500 hover:bg-gray-700/50">
+                    <input type="file" id="file-input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    <div class="space-y-2 pointer-events-none">
+                        <svg class="mx-auto h-12 w-12 text-gray-500" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4V12a4 4 0 014-4h12l4 4h12a4 4 0 014 4z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                        <p class="text-gray-400"><span class="font-semibold text-green-400">Datei hochladen</span> oder per Drag & Drop</p>
+                        <p class="text-xs text-gray-500">Dateien werden im Browser verschlüsselt</p>
+                    </div>
+                </div>
+                 <div class="mt-6 space-y-4">
+                     <div class="relative flex items-start">
+                        <div class="flex items-center h-5">
+                            <input id="password-protect" type="checkbox" class="focus:ring-green-500 h-4 w-4 text-green-600 bg-gray-700 border-gray-600 rounded">
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="password-protect" class="font-medium text-gray-300">Zusätzlicher Passwortschutz</label>
+                            <p class="text-gray-500">Verschlüsselt den E2EE-Schlüssel zusätzlich.</p>
+                        </div>
+                    </div>
+                    <input type="password" id="password-input" placeholder="Passwort eingeben..." class="hidden w-full bg-gray-700 border-gray-600 rounded-md p-2 text-white focus:ring-2 focus:ring-green-500 focus:border-green-500">
+
+                     <div class="relative flex items-start">
+                        <div class="flex items-center h-5">
+                            <input id="onetime-download" type="checkbox" class="focus:ring-green-500 h-4 w-4 text-green-600 bg-gray-700 border-gray-600 rounded">
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="onetime-download" class="font-medium text-gray-300">Einmal-Download</label>
+                            <p class="text-gray-500">Der Link wird nach dem ersten Download ungültig.</p>
+                        </div>
+                    </div>
+
+                        <div class="mb-6">
+                            <label for="expiry-time" class="block text-sm font-medium text-gray-300 mb-2">Gültigkeitsdauer</label>
+                            <select id="expiry-time" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-green-500 focus:border-green-500 p-2.5">
+                                <option value="1h">1 Stunde</option>
+                                <option value="24h" selected>24 Stunden</option>
+                                <option value="7d">7 Tage</option>
+                                <option value="30d">30 Tage</option>
+                            </select>
+                        </div>
+
+                </div>
+            </div>
+
+            <div id="progress-view" class="hidden text-center">
+                <p class="font-semibold text-lg mb-2" id="file-name-progress">Datei wird vorbereitet...</p>
+                <p class="text-sm text-gray-400 mb-4" id="file-size-progress"></p>
+                <div id="encryption-status" class="text-sm text-yellow-400 mb-4">Verschlüssele Datei im Browser...</div>
+                <div class="w-full bg-gray-700 rounded-full h-2.5">
+                    <div id="progress-bar" class="bg-green-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <p class="mt-4 text-lg font-bold text-green-400" id="progress-percentage">0%</p>
+            </div>
+
+            <div id="success-view" class="hidden text-center fade-in">
+                <h2 class="text-2xl font-bold text-green-400 mb-4">Upload erfolgreich!</h2>
+                <p id="success-message" class="text-gray-400 mb-4">Ihr sicherer E2E-verschlüsselter Link ist gültig für:</p>
+                <div class="relative bg-gray-900 rounded-lg p-3 flex items-center mb-4">
+                    <input id="download-link" type="text" readonly class="w-full bg-transparent text-gray-300 border-0 focus:ring-0 text-sm pr-12">
+                    <button id="copy-button" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-300 transition-all">
+                        <svg id="copy-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        <svg id="check-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2f855a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="hidden"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </button>
+                </div>
+                <p class="text-xs text-yellow-400 mb-4">Wichtig: Nur dieser exakte Link inkl. Schlüssel (#) kann die Datei entschlüsseln!</p>
+                <div class="bg-gray-900 p-4 rounded-lg mb-6 flex flex-col items-center">
+                    <p class="text-sm text-gray-400 mb-3">Oder teilen Sie via QR-Code:</p>
+                    <div id="qr-code" class="bg-white p-2 rounded-md"></div>
+                </div>
+                <div class="text-center mb-6">
+                    <p class="text-sm text-gray-400 mb-2">Automatische Löschung in:</p>
+                    <div class="flex justify-center items-center space-x-2 text-white">
+                        <div class="countdown-segment p-3 rounded-lg min-w-[50px]"><div id="countdown-hours" class="text-2xl font-bold">24</div><div class="text-xs text-gray-400">Stunden</div></div>
+                        <div class="text-2xl font-bold">:</div>
+                        <div class="countdown-segment p-3 rounded-lg min-w-[50px]"><div id="countdown-minutes" class="text-2xl font-bold">00</div><div class="text-xs text-gray-400">Minuten</div></div>
+                        <div class="text-2xl font-bold">:</div>
+                        <div class="countdown-segment p-3 rounded-lg min-w-[50px]"><div id="countdown-seconds" class="text-2xl font-bold">00</div><div class="text-xs text-gray-400">Sekunden</div></div>
+                    </div>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a id="kill-link-button" href="#" target="_blank" class="w-full bg-red-800/80 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-all text-center">Link sofort löschen</a>
+                    <button id="share-another-button" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg transition-all">Weitere Datei teilen</button>
+                </div>
+            </div>
+             <div id="error-view" class="hidden text-center fade-in bg-red-900/50 border border-red-700 p-4 rounded-lg">
+                <h2 class="text-xl font-bold text-red-300 mb-2">Fehlgeschlagen</h2>
+                <p id="error-message" class="text-red-300">Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.</p>
+                <button id="try-again-button" class="mt-4 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-all">Erneut versuchen</button>
+            </div>
+        </main>
+        
+        <footer class="text-center mt-8 text-xs text-gray-500">
+             <p>&copy; 2025 CactusDrop. Alle Rechte vorbehalten.</p>
+            <div class="mt-2 space-x-4">
+                <a href="impressum.html" class="hover:text-gray-300 hover:underline">Impressum</a>
+                <a href="datenschutz.html" class="hover:text-gray-300 hover:underline">Datenschutz</a>
+            </div>
+            <!-- PWA Installations-Button -->
+            <div id="install-container" class="mt-4 hidden">
+                 <button id="install-button" class="bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-all text-sm">
+                    App installieren
+                </button>
+            </div>
+        </footer>
+    </div>
+    
+    <!-- iOS Installations-Anleitung (Modal) -->
+    <div id="ios-install-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6 relative text-center">
+             <h3 class="text-lg font-bold text-white mb-4">App auf dem iPhone installieren</h3>
+             <p class="text-gray-300 mb-4">Um CactusDrop zu installieren, tippen Sie auf das "Teilen"-Symbol und wählen Sie dann "Zum Home-Bildschirm".</p>
+             <div class="flex justify-center items-center text-gray-300">
+                <p>1. Tippen Sie auf</p>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                <p>2. Wählen Sie "Zum Home-Bildschirm"</p>
+             </div>
+             <button id="close-ios-modal" class="mt-6 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-all">Verstanden</button>
+        </div>
+    </div>
+    
+    <!-- NEU: Passwort Warn-Dialog (Modal) -->
+    <div id="password-warning-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6 relative text-center">
+             <h3 class="text-lg font-bold text-yellow-400 mb-4">Achtung: Kein Passwort gesetzt</h3>
+             <p class="text-gray-300 mb-6">Sie haben den Passwortschutz aktiviert, aber kein Passwort eingegeben. Wie möchten Sie fortfahren?</p>
+             <div class="flex flex-col gap-3">
+                 <button id="set-password-btn" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg transition-all">Passwort setzen</button>
+                 <button id="upload-without-password-btn" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-all">Ohne Passwort hochladen</button>
+             </div>
+        </div>
+    </div>
+
+<script src="assets/js/app.js" defer></script>
+</script>
+
+</body>
+</html>

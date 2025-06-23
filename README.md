@@ -1,6 +1,6 @@
 # 🌵 CactusDrop - Sicheres & Anonymes Filesharing
 
-![CactusDrop UI](https://github.com/Avacon00/CactusDrop/blob/main/cactusdrop.png)
+![CactusDrop UI](https://user-images.githubusercontent.com/12345/screenshot.png) <!-- Ersetzen Sie dies durch einen echten Screenshot-Link -->
 
 CactusDrop ist eine selbst-gehostete Webanwendung für sicheres und anonymes Teilen von Dateien mit serverseitiger Speicherung und clientseitiger End-to-End-Verschlüsselung (E2EE).
 
@@ -73,4 +73,5 @@ Alle wichtigen Einstellungen werden in der `config.php` vorgenommen. Hier könne
 ---
 
 ## 📄 Lizenz
+
 Dieses Projekt steht unter der MIT-Lizenz. Details finden Sie in der `LICENSE`-Datei.
