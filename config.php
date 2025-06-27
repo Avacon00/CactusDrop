@@ -13,7 +13,7 @@ define('UPLOAD_DIR', __DIR__ . '/uploads/');
 date_default_timezone_set('Europe/Berlin'); //Change timezone
 
 // --- File upload limits (can be customized here) ---
-define('FILE_EXPIRATION_HOURS', 24); // Gültigkeit in Stunden
+define('FILE_EXPIRATION_HOURS', 24); // Validity in hours
 define('MAX_FILE_SIZE', 100 * 1024 * 1024); // 100 MB
 
 // --- Allowed file types ---
