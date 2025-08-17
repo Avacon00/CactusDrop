@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CactusDrop - Anonymes & Sicheres Filesharing</title>
+    
+    <!-- PWA & SEO -->
+    <meta name="description" content="Sicheres & anonymes Filesharing mit End-to-End-Verschlüsselung.">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2f855a">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+
+    <!-- Styles & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .dragover { border-color: #2f855a; background-color: rgba(47, 133, 90, 0.1); }
+        .countdown-segment { background-color: #2d3748; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div id="app" class="w-full max-w-md mx-auto">
+        
+        <header class="text-center mb-8">
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#2f855a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-cactus-green">
+                    <path d="M12 9V2m0 7v13m0-13c-2.833 0-5 2.167-5 5v0c0 2.833 2.167 5 5 5m0-10c2.833 0 5 2.167 5 5v0c0 2.833-2.167 5-5 5m-5 5h10"/>
+                </svg>
+                <h1 class="text-4xl font-bold text-gray-100">Cactus<span class="text-green-500">Drop</span></h1>
+            </div>
+            <p class="text-gray-400">Dateien mit End-to-End-Verschlüsselung teilen.</p>
+        </header>
+
+        <main id="main-content" class="w-full bg-gray-800 rounded-2xl shadow-lg p-6 transition-all duration-300">
+            
+            <div id="upload-view">
+                <div id="drop-zone" class="relative w-full h-48 border-2 border-dashed border-gray-600 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 hover:border-green-500 hover:bg-gray-700/50">
+                    <input type="file" id="file-input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    <div class="space-y-2 pointer-events-none">
+                        <svg class="mx-auto h-12 w-12 text-gray-500" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4V12a4 4 0 014-4h12l4 4h12a4 4 0 014 4z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                        <p class="text-gray-400"><span class="font-semibold text-green-400">Datei hochladen</span> oder per Drag & Drop</p>
+                        <p class="text-xs text-gray-500">Dateien werden im Browser verschlüsselt</p>
+                    </div>
+                </div>
+                 <div class="mt-6 space-y-4">
+                     <div class="relative flex items-start">
+                        <div class="flex items-center h-5">
+                            <input id="password-protect" type="checkbox" class="focus:ring-green-500 h-4 w-4 text-green-600 bg-gray-700 border-gray-600 rounded">
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="password-protect" class="font-medium text-gray-300">Zusätzlicher Passwortschutz</label>
+                            <p class="text-gray-500">Verschlüsselt den E2EE-Schlüssel zusätzlich.</p>
+                        </div>
+                    </div>
+                    <input type="password" id="password-input" placeholder="Passwort eingeben..." class="hidden w-full bg-gray-700 border-gray-600 rounded-md p-2 text-white focus:ring-2 focus:ring-green-500 focus:border-green-500">
+
+                     <div class="relative flex items-start">
+                        <div class="flex items-center h-5">
+                            <input id="one-time-download" type="checkbox" class="focus:ring-green-500 h-4 w-4 text-green-600 bg-gray-700 border-gray-600 rounded">
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="one-time-download" class="font-medium text-gray-300">Einmal-Download</label>
+                            <p class="text-gray-500">Der Link wird nach dem ersten Download ungültig.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="progress-view" class="hidden text-center">
+                <p class="font-semibold text-lg mb-2" id="file-name-progress">Datei wird vorbereitet...</p>
+                <p class="text-sm text-gray-400 mb-4" id="file-size-progress"></p>
+                <div id="encryption-status" class="text-sm text-yellow-400 mb-4">Verschlüssele Datei im Browser...</div>
+                <div class="w-full bg-gray-700 rounded-full h-2.5">
+                    <div id="progress-bar" class="bg-green-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <p class="mt-4 text-lg font-bold text-green-400" id="progress-percentage">0%</p>
+            </div>
+
+            <div id="success-view" class="hidden text-center fade-in">
+                <h2 class="text-2xl font-bold text-green-400 mb-4">Upload erfolgreich!</h2>
+                <p class="text-gray-400 mb-4">Ihr sicherer E2E-verschlüsselter Link ist 24h gültig:</p>
+                <div class="relative bg-gray-900 rounded-lg p-3 flex items-center mb-4">
+                    <input id="download-link" type="text" readonly class="w-full bg-transparent text-gray-300 border-0 focus:ring-0 text-sm pr-12">
+                    <button id="copy-button" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-300 transition-all">
+                        <svg id="copy-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        <svg id="check-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2f855a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="hidden"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </button>
+                </div>
+                <p class="text-xs text-yellow-400 mb-4">Wichtig: Nur dieser exakte Link inkl. Schlüssel (#) kann die Datei entschlüsseln!</p>
+                <div class="bg-gray-900 p-4 rounded-lg mb-6 flex flex-col items-center">
+                    <p class="text-sm text-gray-400 mb-3">Oder teilen Sie via QR-Code:</p>
+                    <div id="qr-code" class="bg-white p-2 rounded-md"></div>
+                </div>
+                <div class="text-center mb-6">
+                    <p class="text-sm text-gray-400 mb-2">Automatische Löschung in:</p>
+                    <div class="flex justify-center items-center space-x-2 text-white">
+                        <div class="countdown-segment p-3 rounded-lg min-w-[50px]"><div id="countdown-hours" class="text-2xl font-bold">24</div><div class="text-xs text-gray-400">Stunden</div></div>
+                        <div class="text-2xl font-bold">:</div>
+                        <div class="countdown-segment p-3 rounded-lg min-w-[50px]"><div id="countdown-minutes" class="text-2xl font-bold">00</div><div class="text-xs text-gray-400">Minuten</div></div>
+                        <div class="text-2xl font-bold">:</div>
+                        <div class="countdown-segment p-3 rounded-lg min-w-[50px]"><div id="countdown-seconds" class="text-2xl font-bold">00</div><div class="text-xs text-gray-400">Sekunden</div></div>
+                    </div>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a id="kill-link-button" href="#" target="_blank" class="w-full bg-red-800/80 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-all text-center">Link sofort löschen</a>
+                    <button id="share-another-button" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg transition-all">Weitere Datei teilen</button>
+                </div>
+            </div>
+             <div id="error-view" class="hidden text-center fade-in bg-red-900/50 border border-red-700 p-4 rounded-lg">
+                <h2 class="text-xl font-bold text-red-300 mb-2">Fehlgeschlagen</h2>
+                <p id="error-message" class="text-red-300">Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.</p>
+                <button id="try-again-button" class="mt-4 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-all">Erneut versuchen</button>
+            </div>
+        </main>
+        
+        <footer class="text-center mt-8 text-xs text-gray-500">
+             <p>&copy; 2025 CactusDrop. Alle Rechte vorbehalten.</p>
+            <div class="mt-2 space-x-4">
+                <a href="impressum.html" class="hover:text-gray-300 hover:underline">Impressum</a>
+                <a href="datenschutz.html" class="hover:text-gray-300 hover:underline">Datenschutz</a>
+            </div>
+            <!-- PWA Installations-Button -->
+            <div id="install-container" class="mt-4 hidden">
+                 <button id="install-button" class="bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-all text-sm">
+                    App installieren
+                </button>
+            </div>
+        </footer>
+    </div>
+    
+    <!-- iOS Installations-Anleitung (Modal) -->
+    <div id="ios-install-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6 relative text-center">
+             <h3 class="text-lg font-bold text-white mb-4">App auf dem iPhone installieren</h3>
+             <p class="text-gray-300 mb-4">Um CactusDrop zu installieren, tippen Sie auf das "Teilen"-Symbol und wählen Sie dann "Zum Home-Bildschirm".</p>
+             <div class="flex justify-center items-center text-gray-300">
+                <p>1. Tippen Sie auf</p>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                <p>2. Wählen Sie "Zum Home-Bildschirm"</p>
+             </div>
+             <button id="close-ios-modal" class="mt-6 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-all">Verstanden</button>
+        </div>
+    </div>
+    
+    <!-- NEU: Passwort Warn-Dialog (Modal) -->
+    <div id="password-warning-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6 relative text-center">
+             <h3 class="text-lg font-bold text-yellow-400 mb-4">Achtung: Kein Passwort gesetzt</h3>
+             <p class="text-gray-300 mb-6">Sie haben den Passwortschutz aktiviert, aber kein Passwort eingegeben. Wie möchten Sie fortfahren?</p>
+             <div class="flex flex-col gap-3">
+                 <button id="set-password-btn" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg transition-all">Passwort setzen</button>
+                 <button id="upload-without-password-btn" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-all">Ohne Passwort hochladen</button>
+             </div>
+        </div>
+    </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // === Views and Elements ===
+    const uploadView = document.getElementById('upload-view');
+    const progressView = document.getElementById('progress-view');
+    const successView = document.getElementById('success-view');
+    const errorView = document.getElementById('error-view');
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const passwordProtectCheckbox = document.getElementById('password-protect');
+    const passwordInput = document.getElementById('password-input');
+    const oneTimeCheckbox = document.getElementById('one-time-download');
+    const fileNameProgress = document.getElementById('file-name-progress');
+    const fileSizeProgress = document.getElementById('file-size-progress');
+    const encryptionStatus = document.getElementById('encryption-status');
+    const progressBar = document.getElementById('progress-bar');
+    const progressPercentage = document.getElementById('progress-percentage');
+    const downloadLinkInput = document.getElementById('download-link');
+    const copyButton = document.getElementById('copy-button');
+    const copyIcon = document.getElementById('copy-icon');
+    const checkIcon = document.getElementById('check-icon');
+    const qrCodeContainer = document.getElementById('qr-code');
+    const countdownHours = document.getElementById('countdown-hours');
+    const countdownMinutes = document.getElementById('countdown-minutes');
+    const countdownSeconds = document.getElementById('countdown-seconds');
+    const killLinkButton = document.getElementById('kill-link-button');
+    const shareAnotherButton = document.getElementById('share-another-button');
+    const errorMessage = document.getElementById('error-message');
+    const tryAgainButton = document.getElementById('try-again-button');
+    let countdownInterval;
+
+    // === Event Listeners ===
+    passwordProtectCheckbox.addEventListener('change', () => {
+        passwordInput.classList.toggle('hidden', !passwordProtectCheckbox.checked);
+        if (passwordProtectCheckbox.checked) passwordInput.focus();
+    });
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', e => { e.preventDefault(); dropZone.classList.remove('dragover'); });
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', e => {
+        if (e.target.files.length > 0) handleFile(e.target.files[0]);
+    });
+    copyButton.addEventListener('click', async () => {
+        try {
+            // Moderne Clipboard API verwenden
+            await navigator.clipboard.writeText(downloadLinkInput.value);
+            
+            // Visuelles Feedback
+            copyIcon.classList.add('hidden'); 
+            checkIcon.classList.remove('hidden');
+            copyButton.style.backgroundColor = '#059669'; // Grün für Erfolg
+            
+            setTimeout(() => { 
+                copyIcon.classList.remove('hidden'); 
+                checkIcon.classList.add('hidden'); 
+                copyButton.style.backgroundColor = ''; // Zurück zur Standard-Farbe
+            }, 2000);
+        } catch (err) {
+            // Fallback für ältere Browser
+            try {
+                downloadLinkInput.select();
+                downloadLinkInput.setSelectionRange(0, 99999); // Für mobile Geräte
+                document.execCommand('copy');
+                
+                copyIcon.classList.add('hidden'); 
+                checkIcon.classList.remove('hidden');
+                setTimeout(() => { 
+                    copyIcon.classList.remove('hidden'); 
+                    checkIcon.classList.add('hidden'); 
+                }, 2000);
+            } catch (fallbackErr) {
+                alert('Link kopieren fehlgeschlagen. Bitte manuell markieren und kopieren.');
+            }
+        }
+    });
+    shareAnotherButton.addEventListener('click', resetApp);
+    tryAgainButton.addEventListener('click', resetApp);
+
+    // === Upload- und Verschlüsselungs-Logik ===
+
+    // Wird aufgerufen, wenn eine Datei ausgewählt wird
+    function handleFile(file) {
+        // PRÜFUNG: Wenn Passwortschutz aktiv ist, aber das Feld leer ist
+        if (passwordProtectCheckbox.checked && !passwordInput.value) {
+            const modal = document.getElementById('password-warning-modal');
+            const setPasswordBtn = document.getElementById('set-password-btn');
+            const uploadWithoutPasswordBtn = document.getElementById('upload-without-password-btn');
+
+            modal.classList.remove('hidden');
+
+            setPasswordBtn.onclick = () => {
+                modal.classList.add('hidden');
+                passwordInput.focus();
+            };
+
+            uploadWithoutPasswordBtn.onclick = () => {
+                modal.classList.add('hidden');
+                passwordProtectCheckbox.checked = false; // Deaktiviere Schutz für diesen Upload
+                passwordInput.classList.add('hidden');
+                proceedWithUpload(file);
+            };
+            return; // Stoppt den Prozess, bis der Benutzer eine Wahl trifft
+        }
+        
+        // Wenn alles ok ist, fahre direkt fort
+        proceedWithUpload(file);
+    }
+
+    const bufferToBase64 = (buffer) => btoa(String.fromCharCode(...new Uint8Array(buffer)));
+
+    // Haupt-Funktion für Verschlüsselung und Upload
+    async function proceedWithUpload(file) {
+        uploadView.classList.add('hidden');
+        errorView.classList.add('hidden');
+        progressView.classList.remove('hidden');
+
+        fileNameProgress.textContent = file.name;
+        fileSizeProgress.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
+
+        const usePassword = passwordProtectCheckbox.checked && passwordInput.value;
+
+        try {
+            encryptionStatus.textContent = 'Lese Datei...';
+            const fileBuffer = await file.arrayBuffer();
+
+            encryptionStatus.textContent = 'Generiere Datei-Schlüssel...';
+            const { key: fileKey, iv: fileIv } = await generateAesKey();
+            
+            encryptionStatus.textContent = 'Verschlüssele Datei im Browser...';
+            const encryptedFileBuffer = await encryptData(fileBuffer, fileKey, fileIv);
+            const encryptedBlob = new Blob([encryptedFileBuffer], { type: 'application/octet-stream' });
+
+            let keyFragment;
+            if (usePassword) {
+                encryptionStatus.textContent = 'Verschlüssele Schlüssel mit Passwort...';
+                const exportedFileKey = await crypto.subtle.exportKey('raw', fileKey);
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+                const passwordKey = await deriveKeyFromPassword(passwordInput.value, salt);
+                const keyIv = crypto.getRandomValues(new Uint8Array(12));
+                const encryptedKey = await encryptData(exportedFileKey, passwordKey, keyIv);
+                
+                keyFragment = `p.${bufferToBase64(salt)}.${bufferToBase64(keyIv)}.${bufferToBase64(encryptedKey)}.${bufferToBase64(fileIv)}`;
+            } else {
+                encryptionStatus.textContent = 'Bereite sicheren Link vor...';
+                const exportedFileKey = await crypto.subtle.exportKey('raw', fileKey);
+                keyFragment = `${bufferToBase64(exportedFileKey)}.${bufferToBase64(fileIv)}`;
+            }
+            
+            encryptionStatus.textContent = 'Lade verschlüsselte Daten hoch...';
+            const serverResponse = await uploadFile(encryptedBlob, file.name, oneTimeCheckbox.checked);
+
+            const finalUrl = `${serverResponse.downloadUrl}#${keyFragment}`;
+            showSuccessView(finalUrl, serverResponse.deleteUrl, serverResponse.expiresAt);
+
+        } catch (err) {
+            console.error('E2EE process failed:', err);
+            showErrorView(err.message || 'Ein Fehler während der Verschlüsselung ist aufgetreten.');
+        }
+    }
+
+    async function generateAesKey() {
+        const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        return { key, iv };
+    }
+    
+    async function deriveKeyFromPassword(password, salt) {
+        const encoder = new TextEncoder();
+        const keyMaterial = await crypto.subtle.importKey('raw', encoder.encode(password), { name: 'PBKDF2' }, false, ['deriveKey']);
+        return await crypto.subtle.deriveKey(
+            { name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
+            keyMaterial,
+            { name: 'AES-GCM', length: 256 },
+            true,
+            ['encrypt', 'decrypt']
+        );
+    }
+    
+    async function encryptData(data, key, iv) {
+        return await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, data);
+    }
+
+    async function uploadFile(blob, originalFilename, isOneTime) {
+        return new Promise((resolve, reject) => {
+            try {
+                const formData = new FormData();
+                formData.append('file', blob, originalFilename);
+                if (isOneTime) formData.append('oneTimeDownload', 'true');
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', 'upload.php', true);
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    const percentComplete = (event.loaded / event.total) * 100;
+                    progressBar.style.width = `${percentComplete}%`;
+                    progressPercentage.textContent = `${Math.round(percentComplete)}%`;
+                }
+            };
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    try {
+                        console.log('Server Response:', xhr.responseText);
+                        const response = JSON.parse(xhr.responseText);
+                        response.status === 'success' ? resolve(response) : reject(new Error(response.message || 'Serverfehler.'));
+                    } catch (e) {
+                        console.error('JSON Parse Error:', e);
+                        console.error('Raw Response:', xhr.responseText);
+                        reject(new Error('Ungültige Serverantwort: ' + xhr.responseText.substring(0, 100)));
+                    }
+                } else {
+                    console.error('HTTP Error:', xhr.status, xhr.statusText);
+                    console.error('Response:', xhr.responseText);
+                    reject(new Error(`Serverfehler: ${xhr.statusText} (${xhr.status})`));
+                }
+            };
+            xhr.onerror = () => reject(new Error('Netzwerkfehler.'));
+            xhr.send(formData);
+            
+            } catch (error) {
+                reject(new Error('Upload error: ' + error.message));
+            }
+        });
+    }
+
+    // === Ansichts- und Hilfsfunktionen ===
+    function showSuccessView(finalUrl, deleteUrl, expiresAt) {
+        progressView.classList.add('hidden');
+        successView.classList.remove('hidden');
+        downloadLinkInput.value = finalUrl;
+        killLinkButton.href = deleteUrl;
+        
+        qrCodeContainer.innerHTML = '';
+        const qrImg = document.createElement('img');
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(finalUrl)}&bgcolor=ffffff`;
+        qrImg.alt = 'QR Code';
+        qrImg.onerror = () => qrCodeContainer.innerHTML = '<p class="text-xs text-red-400">QR-Code konnte nicht geladen werden.</p>';
+        qrCodeContainer.appendChild(qrImg);
+        
+        startCountdown(expiresAt);
+    }
+    function showErrorView(message) {
+        progressView.classList.add('hidden');
+        errorView.classList.remove('hidden');
+        errorMessage.textContent = message;
+    }
+    function startCountdown(expiresAt) {
+        const endTime = new Date(expiresAt).getTime();
+        countdownInterval = setInterval(() => {
+            const now = new Date().getTime();
+            const distance = endTime - now;
+            if (distance < 0) {
+                clearInterval(countdownInterval);
+                countdownHours.textContent = '00'; countdownMinutes.textContent = '00'; countdownSeconds.textContent = '00';
+                return;
+            }
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            countdownHours.textContent = String(hours).padStart(2, '0');
+            countdownMinutes.textContent = String(minutes).padStart(2, '0');
+            countdownSeconds.textContent = String(seconds).padStart(2, '0');
+        }, 1000);
+    }
+    function resetApp() {
+        clearInterval(countdownInterval);
+        successView.classList.add('hidden');
+        progressView.classList.add('hidden');
+        errorView.classList.add('hidden');
+        uploadView.classList.remove('hidden');
+        fileInput.value = '';
+        passwordInput.value = '';
+        passwordInput.classList.add('hidden');
+        passwordProtectCheckbox.checked = false;
+        oneTimeCheckbox.checked = false;
+        progressBar.style.width = '0%';
+        progressPercentage.textContent = '0%';
+    }
+});
+</script>
+
+<!-- PWA Service Worker & Installations-Logik -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').then(registration => {
+        console.log('ServiceWorker registration successful');
+      }, err => {
+        console.log('ServiceWorker registration failed: ', err);
+      });
+    });
+  }
+
+  // Installations-Logik
+  const installContainer = document.getElementById('install-container');
+  const installButton = document.getElementById('install-button');
+  const iosInstallModal = document.getElementById('ios-install-modal');
+  const closeIosModal = document.getElementById('close-ios-modal');
+  let deferredPrompt;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!window.matchMedia('(display-mode: standalone)').matches) {
+        installContainer.classList.remove('hidden');
+    }
+  });
+
+  installButton.addEventListener('click', async () => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    
+    if (isIOS) {
+        iosInstallModal.classList.remove('hidden');
+    } else if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response to the install prompt: ${outcome}`);
+        deferredPrompt = null;
+        installContainer.classList.add('hidden');
+    } else {
+        alert('Um diese App zu installieren, suchen Sie bitte die Option "Zum Startbildschirm hinzufügen" in den Einstellungen Ihres Browsers.');
+    }
+  });
+
+  closeIosModal.addEventListener('click', () => {
+      iosInstallModal.classList.add('hidden');
+  });
+
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+      installContainer.classList.add('hidden');
+  } else {
+      installContainer.classList.remove('hidden');
+  }
+
+</script>
+
+</body>
+</html>
