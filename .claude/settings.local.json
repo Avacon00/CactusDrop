@@ -6,7 +6,8 @@
       "Bash(mv:*)",
       "Bash(powershell:*)",
       "Bash(dir:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []
