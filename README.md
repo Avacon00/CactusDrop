@@ -1,6 +1,8 @@
 # 🌵 CactusDrop Free4 ALL
 
-**Sicheres & anonymes Filesharing mit End-to-End-Verschlüsselung**
+**Sicheres & anonymes Filesharing mit End-to-End-Verschlüsselung.**
+
+**Sicher in der Wüste des Internets 🌵**
 
 CactusDrop ist eine selbst-gehostete, sichere File-Sharing-Anwendung, die Dateien mit client-seitiger End-to-End-Verschlüsselung teilt. Alle Dateien werden automatisch nach 24 Stunden gelöscht.
 
