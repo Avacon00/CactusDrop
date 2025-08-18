@@ -270,17 +270,31 @@ document.addEventListener('DOMContentLoaded', function() {
             if (isPasswordProtected) {
                 if (!passwordInput.value) throw new Error('Passwort erforderlich.');
                 var parts = keyFragment.split('.');
-                var salt = base64ToBuffer(parts[1]);
-                var keyIv = base64ToBuffer(parts[2]);
-                var encryptedKeyData = base64ToBuffer(parts[3]);
-                fileIv = base64ToBuffer(parts[4]);
+                if (parts.length !== 5) throw new Error('Ungültiges Schlüssel-Format. Erwartet: p.salt.keyIv.encryptedKey.fileIv');
+                
+                try {
+                    var salt = base64ToBuffer(parts[1]);
+                    var keyIv = base64ToBuffer(parts[2]);
+                    var encryptedKeyData = base64ToBuffer(parts[3]);
+                    fileIv = base64ToBuffer(parts[4]);
+                } catch (base64Error) {
+                    throw new Error('Base64-Dekodierung fehlgeschlagen: ' + base64Error.message);
+                }
+                
                 var passwordKey = await deriveKeyFromPassword(passwordInput.value, salt);
                 var decryptedKeyData = await decryptData(encryptedKeyData, passwordKey, keyIv);
                 fileKey = await crypto.subtle.importKey('raw', decryptedKeyData, { name: 'AES-GCM' }, true, ['decrypt']);
             } else {
                 var parts = keyFragment.split('.');
-                var keyData = base64ToBuffer(parts[0]);
-                fileIv = base64ToBuffer(parts[1]);
+                if (parts.length !== 2) throw new Error('Ungültiges Schlüssel-Format. Erwartet: key.iv');
+                
+                try {
+                    var keyData = base64ToBuffer(parts[0]);
+                    fileIv = base64ToBuffer(parts[1]);
+                } catch (base64Error) {
+                    throw new Error('Base64-Dekodierung fehlgeschlagen: ' + base64Error.message);
+                }
+                
                 fileKey = await crypto.subtle.importKey('raw', keyData, { name: 'AES-GCM' }, true, ['decrypt']);
             }
 

@@ -253,6 +253,20 @@ CREATE TABLE security_logs (
 - Moderne Clipboard API implementiert mit Fallback
 - Funktioniert jetzt in allen Browsern (Desktop + Mobile)
 
+#### **Problem 6: Bulk-Upload Base64-Dekodierung Fehler**
+**Symptom:** `"Entschlüsselung fehlgeschlagen: String contains an invalid character"` bei passwort-geschützten Multi-File-Uploads
+
+**Ursache:** Inkonsistente Base64-Encoding zwischen Upload- und Download-Prozess
+- Upload-Prozess verwendete verschiedene Base64-Funktionen an unterschiedlichen Stellen
+- Typed Arrays benötigen `.buffer` Eigenschaft für korrekte Base64-Encodierung
+- Bulk-Upload-Code hatte anderen Base64-Encoding-Pfad als Single-Upload
+
+**✅ Lösung:**
+- Konsistente `bufferToBase64()` Funktion für alle Schlüssel-Fragmente implementiert
+- Verwendung von `.buffer` Eigenschaft bei Typed Arrays (salt, keyIv, encryptedKey, fileIv)
+- Einheitlicher Base64-Encoding-Pfad für Single- und Bulk-Uploads
+- Robuste Fehlerbehandlung mit detailliertem Debugging
+
 ### 🛠 Debug-Workflow
 
 #### **Bei Upload-Problemen:**
@@ -419,6 +433,7 @@ Das Projekt hat **zwei Ansätze** für Security-Features:
 - **Copy-Button defekt** - Moderne Clipboard API mit Fallback
 - **Navigation-Probleme** - "Zurück zur Upload-Seite" Buttons hinzugefügt
 - **CSRF-Token Fehler** - System funktioniert jetzt ohne externe Dependencies
+- **🆕 Bulk-Upload Base64-Dekodierung** - "String contains an invalid character" bei passwort-geschützten Multi-Uploads
 
 ## 🆘 Support
 
@@ -433,7 +448,7 @@ Bei Problemen oder Fragen:
 - [x] **Rate-Limiting** ✅ (v0.2.8)
 - [x] **Input-Validierung** ✅ (v0.2.8)
 - [x] **Self-Extracting Installer** ✅ (v0.2.8)
-- [ ] Bulk-Upload für mehrere Dateien
+- [x] **Bulk-Upload für mehrere Dateien** ✅ (v0.2.8+)
 - [ ] Admin-Panel für Statistiken und Security-Logs
 - [ ] Erweiterte Ablaufzeit-Optionen
 - [ ] Multi-Language-Support

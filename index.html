@@ -43,11 +43,12 @@
             
             <div id="upload-view">
                 <div id="drop-zone" class="relative w-full h-48 border-2 border-dashed border-gray-600 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 hover:border-green-500 hover:bg-gray-700/50">
-                    <input type="file" id="file-input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    <input type="file" id="file-input" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                     <div class="space-y-2 pointer-events-none">
                         <svg class="mx-auto h-12 w-12 text-gray-500" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4V12a4 4 0 014-4h12l4 4h12a4 4 0 014 4z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                        <p class="text-gray-400"><span class="font-semibold text-green-400">Datei hochladen</span> oder per Drag & Drop</p>
-                        <p class="text-xs text-gray-500">Dateien werden im Browser verschlüsselt</p>
+                        <p class="text-gray-400"><span class="font-semibold text-green-400">Dateien hochladen</span> oder per Drag & Drop</p>
+                        <p class="text-xs text-gray-500">Mehrere Dateien werden parallel im Browser verschlüsselt</p>
+                        <p class="text-xs text-blue-400 mt-1">💡 Mehrere Dateien gleichzeitig auswählen für Bulk-Upload</p>
                     </div>
                 </div>
                  <div class="mt-6 space-y-4">
@@ -74,6 +75,7 @@
                 </div>
             </div>
 
+            <!-- Single File Progress View -->
             <div id="progress-view" class="hidden text-center">
                 <p class="font-semibold text-lg mb-2" id="file-name-progress">Datei wird vorbereitet...</p>
                 <p class="text-sm text-gray-400 mb-4" id="file-size-progress"></p>
@@ -84,6 +86,31 @@
                 <p class="mt-4 text-lg font-bold text-green-400" id="progress-percentage">0%</p>
             </div>
 
+            <!-- Bulk Upload Progress View -->
+            <div id="bulk-progress-view" class="hidden">
+                <div class="text-center mb-6">
+                    <p class="font-semibold text-lg mb-2">Mehrere Dateien werden verarbeitet...</p>
+                    <p class="text-sm text-gray-400" id="bulk-status">Verschlüssele <span id="current-file-index">0</span> von <span id="total-files">0</span> Dateien</p>
+                </div>
+                
+                <!-- Overall Progress -->
+                <div class="mb-6">
+                    <div class="flex justify-between text-sm text-gray-400 mb-1">
+                        <span>Gesamtfortschritt</span>
+                        <span id="overall-percentage">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-3">
+                        <div id="overall-progress-bar" class="bg-green-500 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Individual File Progress -->
+                <div class="max-h-64 overflow-y-auto space-y-3" id="file-progress-list">
+                    <!-- Dynamically populated file progress items -->
+                </div>
+            </div>
+
+            <!-- Single File Success View -->
             <div id="success-view" class="hidden text-center fade-in">
                 <h2 class="text-2xl font-bold text-green-400 mb-4">Upload erfolgreich!</h2>
                 <p class="text-gray-400 mb-4">Ihr sicherer E2E-verschlüsselter Link ist 24h gültig:</p>
@@ -112,6 +139,48 @@
                 <div class="flex flex-col sm:flex-row gap-4">
                     <a id="kill-link-button" href="#" target="_blank" class="w-full bg-red-800/80 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-all text-center">Link sofort löschen</a>
                     <button id="share-another-button" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg transition-all">Weitere Datei teilen</button>
+                </div>
+            </div>
+
+            <!-- Bulk Upload Success View -->
+            <div id="bulk-success-view" class="hidden fade-in">
+                <h2 class="text-2xl font-bold text-green-400 mb-4 text-center">Alle Uploads erfolgreich!</h2>
+                <p class="text-gray-400 mb-4 text-center"><span id="uploaded-files-count">0</span> Dateien wurden sicher verschlüsselt hochgeladen:</p>
+                
+                <!-- Downloads List -->
+                <div class="max-h-80 overflow-y-auto space-y-3 mb-6" id="bulk-downloads-list">
+                    <!-- Dynamically populated download links -->
+                </div>
+                
+                <!-- Bulk Actions -->
+                <div class="bg-gray-900 rounded-lg p-4 mb-6">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button id="copy-all-links-button" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-all">
+                            <svg class="inline w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                            Alle Links kopieren
+                        </button>
+                        <button id="download-list-button" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-all">
+                            <svg class="inline w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Liste herunterladen
+                        </button>
+                    </div>
+                </div>
+
+                <div class="text-center mb-6">
+                    <p class="text-sm text-gray-400 mb-2">Alle Dateien werden automatisch gelöscht in:</p>
+                    <div class="flex justify-center items-center space-x-2 text-white">
+                        <div class="countdown-segment p-2 rounded-lg min-w-[40px]"><div id="bulk-countdown-hours" class="text-xl font-bold">24</div><div class="text-xs text-gray-400">Std</div></div>
+                        <div class="text-xl font-bold">:</div>
+                        <div class="countdown-segment p-2 rounded-lg min-w-[40px]"><div id="bulk-countdown-minutes" class="text-xl font-bold">00</div><div class="text-xs text-gray-400">Min</div></div>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button id="bulk-share-another-button" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg transition-all">Weitere Dateien teilen</button>
                 </div>
             </div>
              <div id="error-view" class="hidden text-center fade-in bg-red-900/50 border border-red-700 p-4 rounded-lg">
@@ -168,18 +237,32 @@ document.addEventListener('DOMContentLoaded', () => {
     // === Views and Elements ===
     const uploadView = document.getElementById('upload-view');
     const progressView = document.getElementById('progress-view');
+    const bulkProgressView = document.getElementById('bulk-progress-view');
     const successView = document.getElementById('success-view');
+    const bulkSuccessView = document.getElementById('bulk-success-view');
     const errorView = document.getElementById('error-view');
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
     const passwordProtectCheckbox = document.getElementById('password-protect');
     const passwordInput = document.getElementById('password-input');
     const oneTimeCheckbox = document.getElementById('one-time-download');
+    
+    // Single file progress elements
     const fileNameProgress = document.getElementById('file-name-progress');
     const fileSizeProgress = document.getElementById('file-size-progress');
     const encryptionStatus = document.getElementById('encryption-status');
     const progressBar = document.getElementById('progress-bar');
     const progressPercentage = document.getElementById('progress-percentage');
+    
+    // Bulk progress elements
+    const bulkStatus = document.getElementById('bulk-status');
+    const currentFileIndex = document.getElementById('current-file-index');
+    const totalFiles = document.getElementById('total-files');
+    const overallPercentage = document.getElementById('overall-percentage');
+    const overallProgressBar = document.getElementById('overall-progress-bar');
+    const fileProgressList = document.getElementById('file-progress-list');
+    
+    // Success view elements
     const downloadLinkInput = document.getElementById('download-link');
     const copyButton = document.getElementById('copy-button');
     const copyIcon = document.getElementById('copy-icon');
@@ -190,9 +273,403 @@ document.addEventListener('DOMContentLoaded', () => {
     const countdownSeconds = document.getElementById('countdown-seconds');
     const killLinkButton = document.getElementById('kill-link-button');
     const shareAnotherButton = document.getElementById('share-another-button');
+    
+    // Bulk success elements
+    const uploadedFilesCount = document.getElementById('uploaded-files-count');
+    const bulkDownloadsList = document.getElementById('bulk-downloads-list');
+    const copyAllLinksButton = document.getElementById('copy-all-links-button');
+    const downloadListButton = document.getElementById('download-list-button');
+    const bulkCountdownHours = document.getElementById('bulk-countdown-hours');
+    const bulkCountdownMinutes = document.getElementById('bulk-countdown-minutes');
+    const bulkShareAnotherButton = document.getElementById('bulk-share-another-button');
+    
     const errorMessage = document.getElementById('error-message');
     const tryAgainButton = document.getElementById('try-again-button');
     let countdownInterval;
+
+    // Bulk upload state
+    let currentBulkUpload = null;
+
+    // === Bulk Upload Functions (defined early to avoid hoisting issues) ===
+    
+    // Handle multiple files upload
+    async function handleBulkFiles(files) {
+        
+        // Check file size limits (100MB per file, 500MB total)
+        const maxFileSize = 100 * 1024 * 1024; // 100MB
+        const maxTotalSize = 500 * 1024 * 1024; // 500MB
+        
+        const oversizedFiles = files.filter(file => file.size > maxFileSize);
+        const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+        
+        if (oversizedFiles.length > 0) {
+            showErrorView(`Die folgenden Dateien sind zu groß (max. 100MB): ${oversizedFiles.map(f => f.name).join(', ')}`);
+            return;
+        }
+        
+        if (totalSize > maxTotalSize) {
+            showErrorView(`Gesamtgröße aller Dateien überschreitet 500MB. Aktuell: ${(totalSize / 1024 / 1024).toFixed(1)}MB`);
+            return;
+        }
+
+        // Check password protection for all files
+        if (passwordProtectCheckbox.checked && !passwordInput.value) {
+            const modal = document.getElementById('password-warning-modal');
+            const setPasswordBtn = document.getElementById('set-password-btn');
+            const uploadWithoutPasswordBtn = document.getElementById('upload-without-password-btn');
+
+            modal.classList.remove('hidden');
+
+            setPasswordBtn.onclick = () => {
+                modal.classList.add('hidden');
+                passwordInput.focus();
+            };
+
+            uploadWithoutPasswordBtn.onclick = () => {
+                modal.classList.add('hidden');
+                passwordProtectCheckbox.checked = false;
+                passwordInput.classList.add('hidden');
+                proceedWithBulkUpload(files);
+            };
+            return;
+        }
+        
+        proceedWithBulkUpload(files);
+    }
+
+    async function proceedWithBulkUpload(files) {
+        uploadView.classList.add('hidden');
+        errorView.classList.add('hidden');
+        bulkProgressView.classList.remove('hidden');
+
+        totalFiles.textContent = files.length;
+        currentFileIndex.textContent = '0';
+
+        currentBulkUpload = {
+            files: files,
+            results: [],
+            completed: 0,
+            failed: 0
+        };
+
+        // Initialize progress list
+        fileProgressList.innerHTML = '';
+        files.forEach((file, index) => {
+            const progressItem = createFileProgressItem(file, index);
+            fileProgressList.appendChild(progressItem);
+        });
+
+        // Process files with concurrency control
+        const promises = files.map((file, index) => 
+            processSingleFile(file, index)
+        );
+        
+        try {
+            await Promise.allSettled(promises);
+            showBulkSuccess();
+        } catch (error) {
+            console.error('Bulk upload error:', error);
+            showErrorView('Fehler beim Upload mehrerer Dateien: ' + error.message);
+        }
+    }
+
+    function createFileProgressItem(file, index) {
+        const item = document.createElement('div');
+        item.className = 'bg-gray-700 rounded-lg p-3';
+        item.id = `file-progress-${index}`;
+        
+        item.innerHTML = `
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-medium text-gray-300 truncate">${file.name}</span>
+                <span class="text-xs text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="flex-1 bg-gray-600 rounded-full h-2">
+                    <div class="bg-yellow-500 h-2 rounded-full transition-all duration-300" style="width: 0%" id="progress-${index}"></div>
+                </div>
+                <span class="text-xs font-medium" id="status-${index}">Warteschlange</span>
+            </div>
+        `;
+        
+        return item;
+    }
+
+    async function processSingleFile(file, index) {
+        const progressBar = document.getElementById(`progress-${index}`);
+        const statusSpan = document.getElementById(`status-${index}`);
+        
+        try {
+            statusSpan.textContent = 'Verschlüsselung...';
+            progressBar.style.width = '10%';
+            progressBar.className = progressBar.className.replace('bg-yellow-500', 'bg-blue-500');
+
+            const usePassword = passwordProtectCheckbox.checked && passwordInput.value;
+            const fileBuffer = await file.arrayBuffer();
+            
+            progressBar.style.width = '30%';
+            const { key: fileKey, iv: fileIv } = await generateAesKey();
+            
+            progressBar.style.width = '50%';
+            const encryptedFileBuffer = await encryptData(fileBuffer, fileKey, fileIv);
+            
+            progressBar.style.width = '70%';
+            statusSpan.textContent = 'Upload...';
+
+            let keyFragment;
+            if (usePassword) {
+                const exportedFileKey = await crypto.subtle.exportKey('raw', fileKey);
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+                const passwordKey = await deriveKeyFromPassword(passwordInput.value, salt);
+                const keyIv = crypto.getRandomValues(new Uint8Array(12));
+                const encryptedKey = await encryptData(exportedFileKey, passwordKey, keyIv);
+                
+                console.log('Debug: Bulk-Upload Passwort-Verschlüsselung');
+                console.log('Debug: salt =', salt);
+                console.log('Debug: keyIv =', keyIv); 
+                console.log('Debug: encryptedKey =', encryptedKey);
+                console.log('Debug: fileIv =', fileIv);
+                
+                const saltB64 = bufferToBase64(salt.buffer);
+                const keyIvB64 = bufferToBase64(keyIv.buffer);
+                const encryptedKeyB64 = bufferToBase64(encryptedKey);
+                const fileIvB64 = bufferToBase64(fileIv.buffer);
+                
+                console.log('Debug: saltB64 =', saltB64);
+                console.log('Debug: keyIvB64 =', keyIvB64);
+                console.log('Debug: encryptedKeyB64 =', encryptedKeyB64);
+                console.log('Debug: fileIvB64 =', fileIvB64);
+                
+                keyFragment = `p.${saltB64}.${keyIvB64}.${encryptedKeyB64}.${fileIvB64}`;
+                console.log('Debug: keyFragment =', keyFragment);
+            } else {
+                const exportedFileKey = await crypto.subtle.exportKey('raw', fileKey);
+                console.log('Debug: Bulk-Upload ohne Passwort');
+                console.log('Debug: exportedFileKey =', exportedFileKey);
+                console.log('Debug: fileIv =', fileIv);
+                
+                const keyB64 = bufferToBase64(exportedFileKey);
+                const fileIvB64 = bufferToBase64(fileIv.buffer);
+                
+                console.log('Debug: keyB64 =', keyB64);
+                console.log('Debug: fileIvB64 =', fileIvB64);
+                
+                keyFragment = `${keyB64}.${fileIvB64}`;
+                console.log('Debug: keyFragment =', keyFragment);
+            }
+
+            const formData = new FormData();
+            formData.append('file', new Blob([encryptedFileBuffer]), file.name);
+            formData.append('original_filename', file.name);
+            if (oneTimeCheckbox.checked) formData.append('oneTimeDownload', 'true');
+
+            const response = await fetch('upload.php', { method: 'POST', body: formData });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.status !== 'success') {
+                throw new Error(result.message || 'Unbekannter Fehler');
+            }
+
+            progressBar.style.width = '100%';
+            progressBar.className = progressBar.className.replace('bg-blue-500', 'bg-green-500');
+            statusSpan.textContent = '✓ Abgeschlossen';
+
+            const downloadUrl = `${result.downloadUrl}#${keyFragment}`;
+            
+            currentBulkUpload.results.push({
+                filename: file.name,
+                downloadUrl: downloadUrl,
+                deleteUrl: result.deleteUrl,
+                expiresAt: result.expiresAt,
+                success: true
+            });
+
+            currentBulkUpload.completed++;
+            updateOverallProgress();
+
+        } catch (error) {
+            progressBar.style.width = '100%';
+            progressBar.className = progressBar.className.replace('bg-blue-500', 'bg-red-500');
+            statusSpan.textContent = '✗ Fehler';
+            
+            currentBulkUpload.results.push({
+                filename: file.name,
+                error: error.message,
+                success: false
+            });
+
+            currentBulkUpload.failed++;
+            updateOverallProgress();
+        }
+    }
+
+    function updateOverallProgress() {
+        const total = currentBulkUpload.files.length;
+        const completed = currentBulkUpload.completed + currentBulkUpload.failed;
+        const percentage = Math.round((completed / total) * 100);
+        
+        currentFileIndex.textContent = completed;
+        overallPercentage.textContent = `${percentage}%`;
+        overallProgressBar.style.width = `${percentage}%`;
+    }
+
+    function showBulkSuccess() {
+        bulkProgressView.classList.add('hidden');
+        bulkSuccessView.classList.remove('hidden');
+        
+        const successfulUploads = currentBulkUpload.results.filter(r => r.success);
+        uploadedFilesCount.textContent = successfulUploads.length;
+        
+        // Populate download links
+        bulkDownloadsList.innerHTML = '';
+        currentBulkUpload.results.forEach((result, index) => {
+            const linkItem = createDownloadLinkItem(result, index);
+            bulkDownloadsList.appendChild(linkItem);
+        });
+
+        // Start countdown for bulk uploads
+        startBulkCountdown();
+    }
+
+    function createDownloadLinkItem(result, index) {
+        const item = document.createElement('div');
+        item.className = `rounded-lg p-3 ${result.success ? 'bg-gray-700' : 'bg-red-900/30'}`;
+        
+        if (result.success) {
+            item.innerHTML = `
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-gray-300 truncate">${result.filename}</span>
+                    <span class="text-xs text-green-400">✓ Erfolgreich</span>
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" value="${result.downloadUrl}" readonly 
+                           class="flex-1 bg-gray-800 border-gray-600 rounded px-2 py-1 text-xs text-gray-300 border">
+                    <button onclick="copyToClipboard('${result.downloadUrl}')" 
+                            class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded transition-all">
+                        Kopieren
+                    </button>
+                </div>
+            `;
+        } else {
+            item.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium text-gray-300 truncate">${result.filename}</span>
+                    <span class="text-xs text-red-400">✗ Fehler</span>
+                </div>
+                <p class="text-xs text-red-300 mt-1">${result.error}</p>
+            `;
+        }
+        
+        return item;
+    }
+
+    function startBulkCountdown() {
+        clearInterval(countdownInterval);
+        
+        // Use the expiration time from the first successful upload
+        const firstSuccessfulUpload = currentBulkUpload.results.find(r => r.success && r.expiresAt);
+        if (!firstSuccessfulUpload) {
+            // Fallback: Calculate 24 hours from now
+            const endTime = new Date(Date.now() + 24 * 60 * 60 * 1000).getTime();
+            startBulkCountdownTimer(endTime);
+            return;
+        }
+        
+        const endTime = new Date(firstSuccessfulUpload.expiresAt).getTime();
+        startBulkCountdownTimer(endTime);
+    }
+    
+    function startBulkCountdownTimer(endTime) {
+        countdownInterval = setInterval(() => {
+            const now = new Date().getTime();
+            const distance = endTime - now;
+            
+            if (distance < 0) {
+                clearInterval(countdownInterval);
+                bulkCountdownHours.textContent = '00';
+                bulkCountdownMinutes.textContent = '00';
+                return;
+            }
+            
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            
+            bulkCountdownHours.textContent = String(hours).padStart(2, '0');
+            bulkCountdownMinutes.textContent = String(minutes).padStart(2, '0');
+        }, 60000); // Update every minute
+    }
+
+    async function copyAllLinks() {
+        const successfulLinks = currentBulkUpload.results
+            .filter(r => r.success)
+            .map(r => `${r.filename}: ${r.downloadUrl}`)
+            .join('\n');
+
+        try {
+            await navigator.clipboard.writeText(successfulLinks);
+            
+            const originalText = copyAllLinksButton.innerHTML;
+            copyAllLinksButton.innerHTML = '✓ Kopiert!';
+            copyAllLinksButton.style.backgroundColor = '#059669';
+            
+            setTimeout(() => {
+                copyAllLinksButton.innerHTML = originalText;
+                copyAllLinksButton.style.backgroundColor = '';
+            }, 2000);
+        } catch (err) {
+            alert('Kopieren fehlgeschlagen. Bitte manuell kopieren.');
+        }
+    }
+
+    function downloadLinksList() {
+        const content = currentBulkUpload.results
+            .filter(r => r.success)
+            .map(r => `${r.filename}: ${r.downloadUrl}`)
+            .join('\n');
+
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `cactusdrop-links-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // Global function for individual copy buttons
+    window.copyToClipboard = async function(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch (err) {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+        }
+    };
+
+    // Robust Base64 encoding function for ArrayBuffers
+    function arrayBufferToBase64(buffer) {
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        const chunkSize = 0x8000; // 32KB chunks to avoid call stack limits
+        
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+            const chunk = bytes.subarray(i, i + chunkSize);
+            binary += String.fromCharCode.apply(null, chunk);
+        }
+        
+        return btoa(binary);
+    }
 
     // === Event Listeners ===
     passwordProtectCheckbox.addEventListener('change', () => {
@@ -204,10 +681,24 @@ document.addEventListener('DOMContentLoaded', () => {
     dropZone.addEventListener('drop', e => {
         e.preventDefault();
         dropZone.classList.remove('dragover');
-        if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+        if (e.dataTransfer.files.length > 0) {
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length === 1) {
+                handleFile(files[0]);
+            } else {
+                handleBulkFiles(files);
+            }
+        }
     });
     fileInput.addEventListener('change', e => {
-        if (e.target.files.length > 0) handleFile(e.target.files[0]);
+        if (e.target.files.length > 0) {
+            const files = Array.from(e.target.files);
+            if (files.length === 1) {
+                handleFile(files[0]);
+            } else {
+                handleBulkFiles(files);
+            }
+        }
     });
     copyButton.addEventListener('click', async () => {
         try {
@@ -244,6 +735,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     shareAnotherButton.addEventListener('click', resetApp);
     tryAgainButton.addEventListener('click', resetApp);
+    
+    // Bulk upload event listeners
+    bulkShareAnotherButton.addEventListener('click', resetApp);
+    copyAllLinksButton.addEventListener('click', copyAllLinks);
+    downloadListButton.addEventListener('click', downloadLinksList);
 
     // === Upload- und Verschlüsselungs-Logik ===
 
@@ -308,11 +804,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const keyIv = crypto.getRandomValues(new Uint8Array(12));
                 const encryptedKey = await encryptData(exportedFileKey, passwordKey, keyIv);
                 
-                keyFragment = `p.${bufferToBase64(salt)}.${bufferToBase64(keyIv)}.${bufferToBase64(encryptedKey)}.${bufferToBase64(fileIv)}`;
+                keyFragment = `p.${bufferToBase64(salt.buffer)}.${bufferToBase64(keyIv.buffer)}.${bufferToBase64(encryptedKey)}.${bufferToBase64(fileIv.buffer)}`;
             } else {
                 encryptionStatus.textContent = 'Bereite sicheren Link vor...';
                 const exportedFileKey = await crypto.subtle.exportKey('raw', fileKey);
-                keyFragment = `${bufferToBase64(exportedFileKey)}.${bufferToBase64(fileIv)}`;
+                keyFragment = `${bufferToBase64(exportedFileKey)}.${bufferToBase64(fileIv.buffer)}`;
             }
             
             encryptionStatus.textContent = 'Lade verschlüsselte Daten hoch...';
@@ -430,10 +926,13 @@ document.addEventListener('DOMContentLoaded', () => {
             countdownSeconds.textContent = String(seconds).padStart(2, '0');
         }, 1000);
     }
+
     function resetApp() {
         clearInterval(countdownInterval);
         successView.classList.add('hidden');
+        bulkSuccessView.classList.add('hidden');
         progressView.classList.add('hidden');
+        bulkProgressView.classList.add('hidden');
         errorView.classList.add('hidden');
         uploadView.classList.remove('hidden');
         fileInput.value = '';
@@ -443,6 +942,11 @@ document.addEventListener('DOMContentLoaded', () => {
         oneTimeCheckbox.checked = false;
         progressBar.style.width = '0%';
         progressPercentage.textContent = '0%';
+        overallProgressBar.style.width = '0%';
+        overallPercentage.textContent = '0%';
+        currentBulkUpload = null;
+        fileProgressList.innerHTML = '';
+        bulkDownloadsList.innerHTML = '';
     }
 });
 </script>
