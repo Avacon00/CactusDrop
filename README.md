@@ -344,13 +344,6 @@ Bei Problemen oder Fragen:
 - [x] **Rate-Limiting** ✅ (v0.2.8)
 - [x] **Input-Validierung** ✅ (v0.2.8)
 - [x] **Self-Extracting Installer** ✅ (v0.2.8)
-- [ ] Bulk-Upload für mehrere Dateien
-- [ ] Admin-Panel für Statistiken und Security-Logs
-- [ ] Erweiterte Ablaufzeit-Optionen
-- [ ] Multi-Language-Support
-- [ ] API-Endpoints
-- [ ] Docker-Container
-
----
+--- mehr folgt die Wochen / Monate
 
 **CactusDrop** - Sicher in der Wüste des Internets 🌵
