@@ -145,46 +145,6 @@ Der Server kann niemals auf die Originaldateien zugreifen, da:
 - Nur verschlüsselte Daten werden gespeichert
 
 ## 🔧 Wartung & Monitoring
-
-### 🆕 Erweiterte Datenbankstruktur
-```sql
--- Haupttabelle (erweitert)
-CREATE TABLE files (
-  id varchar(16) NOT NULL PRIMARY KEY,
-  secret_token varchar(64) NOT NULL,
-  original_filename varchar(255) NOT NULL,
-  password_hash varchar(255) DEFAULT NULL,
-  is_onetime tinyint(1) DEFAULT 0,
-  file_size bigint(20) DEFAULT NULL,        -- 🆕 Dateigröße
-  mime_type varchar(100) DEFAULT NULL,      -- 🆕 MIME-Type
-  upload_ip varchar(45) DEFAULT NULL,       -- 🆕 Upload-IP
-  created_at timestamp DEFAULT CURRENT_TIMESTAMP,
-  delete_at timestamp NOT NULL,
-  KEY idx_delete_at (delete_at),
-  KEY idx_created_at (created_at)           -- 🆕 Performance-Index
-);
-
--- 🆕 Rate-Limiting
-CREATE TABLE rate_limits (
-  id int(11) NOT NULL AUTO_INCREMENT,
-  ip_address varchar(45) NOT NULL,
-  created_at timestamp DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_ip_created (ip_address, created_at)
-);
-
--- 🆕 Security-Logs
-CREATE TABLE security_logs (
-  id int(11) NOT NULL AUTO_INCREMENT,
-  ip_address varchar(45) NOT NULL,
-  event_type varchar(50) NOT NULL,
-  details text DEFAULT NULL,
-  user_agent varchar(500) DEFAULT NULL,
-  created_at timestamp DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_ip_event (ip_address, event_type),
-  KEY idx_created_at (created_at)
-);
 ```
 
 ### Logs überwachen
@@ -224,7 +184,6 @@ CREATE TABLE security_logs (
 - Dateiberechtigungen korrekt?
 
 ## 🛡 Sicherheitsempfehlungen
-
 ### ✅ Bereits implementiert (v0.2.8)
 1. **✅ Rate Limiting** - 10 Uploads pro IP/Stunde (automatisch aktiv)
 2. **✅ Input-Validierung** - Umfassende Datei- und Parameter-Prüfung
@@ -241,7 +200,6 @@ CREATE TABLE security_logs (
 11. **Firewall** - Upload-Verzeichnis vor direktem Zugriff schützen
 
 ## 📈 Performance-Tipps
-
 - **Webserver-Caching** für statische Assets aktivieren
 - **Gzip-Kompression** für bessere Ladezeiten
 - **CDN** für TailwindCSS (bereits implementiert)
@@ -250,49 +208,9 @@ CREATE TABLE security_logs (
 ## 📄 Lizenz
 Dieses Projekt steht unter der MIT-Lizenz. Siehe LICENSE-Datei für Details.
 
-## 📚 Projekthistorie & Development Notes
-
-### 🔄 Entwicklungsansätze (für zukünftige Entwicklung)
-
-#### **Security-Features Implementierung:**
-Das Projekt hat **zwei Ansätze** für Security-Features:
-
-**🎯 Ansatz 1: Maximale Sicherheit (Vollversion)**
-- Dateien: `security.php`, `csrf_token.php`, `update_database.php`
-- Features: Rate-Limiting, CSRF-Protection, MIME-Validierung, Path-Traversal-Schutz
-- **Voraussetzungen:** PHP 7.4+, erweiterte DB-Struktur, moderne Server-Umgebung
-
-**🎯 Ansatz 2: Kompatibilität-First (Aktuelle Produktionsversion)**
-- Dateien: `upload.php`, `download.php` (bereits kompatibel)
-- Features: Basis-Validierung, E2E-Verschlüsselung, Core-Funktionalität
-- **Voraussetzungen:** PHP 5.6+, Standard-DB-Struktur, Legacy-Server-Support
-
-### 🚀 Migration Path (Für Upgrades)
-```
-1. Bestehende Installation → Kompatible Version (aktuell)
-2. Server-Updates durchführen → PHP 7.4+, moderne Extensions
-3. Database-Schema erweitern → update_database.php ausführen
-4. Security-Module implementieren → Vollversion aktivieren
-```
-
-### 🔧 File-Mapping (Welche Datei wann verwenden)
-
-| **Szenario** | **Upload** | **Download** | **Features** |
-|--------------|------------|--------------|-------------|
-| **Produktionsserver** | `upload.php` | `download.php` | Basic + E2E (funktioniert) |
-| **Development/Debug** | `upload_basic.php` | `download_simple.php` | Debug + Extended Logs |
-| **Erweiterte Security** | `upload.php` + Security-Module | `download.php` + Security-Module | Alle Features |
-
 ### 🐛 Debug-History (Für Referenz)
 
-**Session vom Heute:**
-- **Problem:** HTTP 500 Fehler durch moderne Security-Features
-- **Root Cause:** Server-Inkompatibilität mit PHP 8+ Features und fehlende DB-Spalten
-- **Solution:** Kompatible Versionen ohne moderne Dependencies erstellt
-- **Result:** Alle Features funktionieren, E2E-Encryption intakt
-
 ## 🆕 Changelog v0.2.8
-
 ### ✅ Neu hinzugefügt
 - **Self-Extracting Installer** - One-File-Installation wie bei WordPress
 - **Umfassendes Security-Modul** (`security.php`) mit allen Validierungsfunktionen
@@ -305,31 +223,12 @@ Das Projekt hat **zwei Ansätze** für Security-Features:
 - **Database Update Script** - Automatische Schema-Erweiterung
 - **Security-Logs** - Monitoring verdächtiger Aktivitäten
 
-### 🔧 Verbessert
-- **upload.php** - Vollständige Sicherheitshärtung
-- **download.php** - Sichere Parameter-Validierung und Chunk-Downloads
-- **delete.php** - Robuste Token-Validierung
-- **Frontend** - CSRF-Token-Integration und verbesserte Fehlerbehandlung
-
-### 🗑 Entfernt
-- **Unsichere direkte Parameter-Übergabe** - Ersetzt durch Validierung
-- **Unvalidierte Dateinamen** - Jetzt vollständige Sanitization
-- **Fehlende Rate-Limits** - Durch intelligente IP-basierte Begrenzung ersetzt
-
 ### 🐛 Sicherheitslücken behoben
 - **CVE-potentielle Upload-Schwachstellen** - Durch Whitelist-Validierung
 - **XSS-Risiken** - Durch sichere Output-Encoding
 - **CSRF-Angriffe** - Durch Token-Validierung
 - **Path-Traversal** - Durch sichere Pfad-Validierung
 - **DoS-Angriffe** - Durch Rate-Limiting
-
-### 🔧 Kritische Bugfixes (Post-Release)
-- **HTTP 500 Upload-Fehler** - Kompatible Version ohne moderne Dependencies
-- **Database Schema Mismatch** - Funktioniert jetzt mit alter DB-Struktur
-- **Download 404 Fehler** - Schöne Error-Pages mit Countdown implementiert
-- **Copy-Button defekt** - Moderne Clipboard API mit Fallback
-- **Navigation-Probleme** - "Zurück zur Upload-Seite" Buttons hinzugefügt
-- **CSRF-Token Fehler** - System funktioniert jetzt ohne externe Dependencies
 
 ## 🆘 Support
 
