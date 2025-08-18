@@ -1,4 +1,4 @@
-# 🌵 CactusDrop
+# 🌵 CactusDrop Free4 ALL
 
 **Sicheres & anonymes Filesharing mit End-to-End-Verschlüsselung**
 
@@ -247,15 +247,7 @@ CREATE TABLE security_logs (
 - **CDN** für TailwindCSS (bereits implementiert)
 - **Database-Indizes** für bessere Query-Performance
 
-## 🤝 Mitwirken
-
-1. Fork das Repository
-2. Feature-Branch erstellen
-3. Änderungen committen
-4. Pull Request erstellen
-
 ## 📄 Lizenz
-
 Dieses Projekt steht unter der MIT-Lizenz. Siehe LICENSE-Datei für Details.
 
 ## 📚 Projekthistorie & Development Notes
