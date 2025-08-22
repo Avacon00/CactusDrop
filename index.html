@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CactusDrop - Anonymes & Sicheres Filesharing</title>
+    
+    <!-- PWA & SEO -->
+    <meta name="description" content="Sicheres & anonymes Filesharing mit End-to-End-Verschlüsselung.">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2f855a">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+
+    <!-- Styles & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .dragover { border-color: #2f855a; background-color: rgba(47, 133, 90, 0.1); }
+        .countdown-segment { background-color: #2d3748; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div id="app" class="w-full max-w-md mx-auto">
+        
+        <header class="text-center mb-8">
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#2f855a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-cactus-green">
+                    <path d="M12 9V2m0 7v13m0-13c-2.833 0-5 2.167-5 5v0c0 2.833 2.167 5 5 5m0-10c2.833 0 5 2.167 5 5v0c0 2.833-2.167 5-5 5m-5 5h10"/>
+                </svg>
+                <h1 class="text-4xl font-bold text-gray-100">Cactus<span class="text-green-500">Drop</span></h1>
+            </div>
+            <p class="text-gray-400">Dateien mit End-to-End-Verschlüsselung teilen.</p>
+        </header>
+
+        <main id="main-content" class="w-full bg-gray-800 rounded-2xl shadow-lg p-6 transition-all duration-300">
+            
+            <div id="upload-view">
+                <div id="drop-zone" class="relative w-full h-48 border-2 border-dashed border-gray-600 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 hover:border-green-500 hover:bg-gray-700/50">
+                    <input type="file" id="file-input" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    <div class="space-y-2 pointer-events-none">
+                        <svg class="mx-auto h-12 w-12 text-gray-500" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4V12a4 4 0 014-4h12l4 4h12a4 4 0 014 4z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                        <p class="text-gray-400"><span class="font-semibold text-green-400">Dateien hochladen</span> oder per Drag & Drop</p>
+                        <p class="text-xs text-gray-500">Mehrere Dateien werden parallel im Browser verschlüsselt</p>
+                        <p class="text-xs text-blue-400 mt-1">💡 Mehrere Dateien gleichzeitig auswählen für Bulk-Upload</p>
+                    </div>
+                </div>
+                 <div class="mt-6 space-y-4">
+                     <div class="relative flex items-start">
+                        <div class="flex items-center h-5">
+                            <input id="password-protect" type="checkbox" class="focus:ring-green-500 h-4 w-4 text-green-600 bg-gray-700 border-gray-600 rounded">
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="password-protect" class="font-medium text-gray-300">Zusätzlicher Passwortschutz</label>
+                            <p class="text-gray-500">Verschlüsselt den E2EE-Schlüssel zusätzlich.</p>
+                        </div>
+                    </div>
+                    <input type="password" id="password-input" placeholder="Passwort eingeben..." class="hidden w-full bg-gray-700 border-gray-600 rounded-md p-2 text-white focus:ring-2 focus:ring-green-500 focus:border-green-500">
+
+                     <div class="relative flex items-start">
+                        <div class="flex items-center h-5">
+                            <input id="one-time-download" type="checkbox" class="focus:ring-green-500 h-4 w-4 text-green-600 bg-gray-700 border-gray-600 rounded">
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="one-time-download" class="font-medium text-gray-300">Einmal-Download</label>
+                            <p class="text-gray-500">Der Link wird nach dem ersten Download ungültig.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Single File Progress View -->
+            <div id="progress-view" class="hidden text-center">
+                <p class="font-semibold text-lg mb-2" id="file-name-progress">Datei wird vorbereitet...</p>
+                <p class="text-sm text-gray-400 mb-4" id="file-size-progress"></p>
+                <div id="encryption-status" class="text-sm text-yellow-400 mb-4">Verschlüssele Datei im Browser...</div>
+                <div class="w-full bg-gray-700 rounded-full h-2.5">
+                    <div id="progress-bar" class="bg-green-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <p class="mt-4 text-lg font-bold text-green-400" id="progress-percentage">0%</p>
+            </div>
+
+            <!-- Bulk Upload Progress View -->
+            <div id="bulk-progress-view" class="hidden">
+                <div class="text-center mb-6">
+                    <p class="font-semibold text-lg mb-2">Mehrere Dateien werden verarbeitet...</p>
+                    <p class="text-sm text-gray-400" id="bulk-status">Verschlüssele <span id="current-file-index">0</span> von <span id="total-files">0</span> Dateien</p>
+                </div>
+                
+                <!-- Overall Progress -->
+                <div class="mb-6">
+                    <div class="flex justify-between text-sm text-gray-400 mb-1">
+                        <span>Gesamtfortschritt</span>
+                        <span id="overall-percentage">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-3">
+                        <div id="overall-progress-bar" class="bg-green-500 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Individual File Progress -->
+                <div class="max-h-64 overflow-y-auto space-y-3" id="file-progress-list">
+                    <!-- Dynamically populated file progress items -->
+                </div>
+            </div>
+
+            <!-- Single File Success View -->
+            <div id="success-view" class="hidden text-center fade-in">
+                <h2 class="text-2xl font-bold text-green-400 mb-4">Upload erfolgreich!</h2>
+                <p class="text-gray-400 mb-4">Ihr sicherer E2E-verschlüsselter Link ist 24h gültig:</p>
+                <div class="relative bg-gray-900 rounded-lg p-3 flex items-center mb-4">
+                    <input id="download-link" type="text" readonly class="w-full bg-transparent text-gray-300 border-0 focus:ring-0 text-sm pr-12">
+                    <button id="copy-button" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-300 transition-all">
+                        <svg id="copy-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        <svg id="check-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2f855a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="hidden"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </button>
+                </div>
+                <p class="text-xs text-yellow-400 mb-4">Wichtig: Nur dieser exakte Link inkl. Schlüssel (#) kann die Datei entschlüsseln!</p>
+                <div class="bg-gray-900 p-4 rounded-lg mb-6 flex flex-col items-center">
+                    <p class="text-sm text-gray-400 mb-3">Oder teilen Sie via QR-Code:</p>
+                    <div id="qr-code" class="bg-white p-2 rounded-md"></div>
+                </div>
+                <div class="text-center mb-6">
+                    <p class="text-sm text-gray-400 mb-2">Automatische Löschung in:</p>
+                    <div class="flex justify-center items-center space-x-2 text-white">
+                        <div class="countdown-segment p-3 rounded-lg min-w-[50px]"><div id="countdown-hours" class="text-2xl font-bold">24</div><div class="text-xs text-gray-400">Stunden</div></div>
+                        <div class="text-2xl font-bold">:</div>
+                        <div class="countdown-segment p-3 rounded-lg min-w-[50px]"><div id="countdown-minutes" class="text-2xl font-bold">00</div><div class="text-xs text-gray-400">Minuten</div></div>
+                        <div class="text-2xl font-bold">:</div>
+                        <div class="countdown-segment p-3 rounded-lg min-w-[50px]"><div id="countdown-seconds" class="text-2xl font-bold">00</div><div class="text-xs text-gray-400">Sekunden</div></div>
+                    </div>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a id="kill-link-button" href="#" target="_blank" class="w-full bg-red-800/80 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-all text-center">Link sofort löschen</a>
+                    <button id="share-another-button" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg transition-all">Weitere Datei teilen</button>
+                </div>
+            </div>
+
+            <!-- Bulk Upload Success View -->
+            <div id="bulk-success-view" class="hidden fade-in">
+                <h2 class="text-2xl font-bold text-green-400 mb-4 text-center">Alle Uploads erfolgreich!</h2>
+                <p class="text-gray-400 mb-4 text-center"><span id="uploaded-files-count">0</span> Dateien wurden sicher verschlüsselt hochgeladen:</p>
+                
+                <!-- Downloads List -->
+                <div class="max-h-80 overflow-y-auto space-y-3 mb-6" id="bulk-downloads-list">
+                    <!-- Dynamically populated download links -->
+                </div>
+                
+                <!-- Bulk Actions -->
+                <div class="bg-gray-900 rounded-lg p-4 mb-6">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button id="copy-all-links-button" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-all">
+                            <svg class="inline w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                            Alle Links kopieren
+                        </button>
+                        <button id="download-list-button" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-all">
+                            <svg class="inline w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Liste herunterladen
+                        </button>
+                    </div>
+                </div>
+
+                <div class="text-center mb-6">
+                    <p class="text-sm text-gray-400 mb-2">Alle Dateien werden automatisch gelöscht in:</p>
+                    <div class="flex justify-center items-center space-x-2 text-white">
+                        <div class="countdown-segment p-2 rounded-lg min-w-[40px]"><div id="bulk-countdown-hours" class="text-xl font-bold">24</div><div class="text-xs text-gray-400">Std</div></div>
+                        <div class="text-xl font-bold">:</div>
+                        <div class="countdown-segment p-2 rounded-lg min-w-[40px]"><div id="bulk-countdown-minutes" class="text-xl font-bold">00</div><div class="text-xs text-gray-400">Min</div></div>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button id="bulk-share-another-button" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg transition-all">Weitere Dateien teilen</button>
+                </div>
+            </div>
+             <div id="error-view" class="hidden text-center fade-in bg-red-900/50 border border-red-700 p-4 rounded-lg">
+                <h2 class="text-xl font-bold text-red-300 mb-2">Fehlgeschlagen</h2>
+                <p id="error-message" class="text-red-300">Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.</p>
+                <button id="try-again-button" class="mt-4 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-all">Erneut versuchen</button>
+            </div>
+        </main>
+        
+        <footer class="text-center mt-8 text-xs text-gray-500">
+             <p>&copy; 2025 CactusDrop. Alle Rechte vorbehalten.</p>
+            <div class="mt-2 space-x-4">
+                <a href="impressum.html" class="hover:text-gray-300 hover:underline">Impressum</a>
+                <a href="datenschutz.html" class="hover:text-gray-300 hover:underline">Datenschutz</a>
+            </div>
+            <!-- PWA Installations-Button -->
+            <div id="install-container" class="mt-4 hidden">
+                 <button id="install-button" class="bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-all text-sm">
+                    App installieren
+                </button>
+            </div>
+        </footer>
+    </div>
+    
+    <!-- iOS Installations-Anleitung (Modal) -->
+    <div id="ios-install-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6 relative text-center">
+             <h3 class="text-lg font-bold text-white mb-4">App auf dem iPhone installieren</h3>
+             <p class="text-gray-300 mb-4">Um CactusDrop zu installieren, tippen Sie auf das "Teilen"-Symbol und wählen Sie dann "Zum Home-Bildschirm".</p>
+             <div class="flex justify-center items-center text-gray-300">
+                <p>1. Tippen Sie auf</p>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                <p>2. Wählen Sie "Zum Home-Bildschirm"</p>
+             </div>
+             <button id="close-ios-modal" class="mt-6 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-all">Verstanden</button>
+        </div>
+    </div>
+    
+    <!-- NEU: Passwort Warn-Dialog (Modal) -->
+    <div id="password-warning-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6 relative text-center">
+             <h3 class="text-lg font-bold text-yellow-400 mb-4">Achtung: Kein Passwort gesetzt</h3>
+             <p class="text-gray-300 mb-6">Sie haben den Passwortschutz aktiviert, aber kein Passwort eingegeben. Wie möchten Sie fortfahren?</p>
+             <div class="flex flex-col gap-3">
+                 <button id="set-password-btn" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg transition-all">Passwort setzen</button>
+                 <button id="upload-without-password-btn" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-all">Ohne Passwort hochladen</button>
+             </div>
+        </div>
+    </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // === Views and Elements ===
+    const uploadView = document.getElementById('upload-view');
+    const progressView = document.getElementById('progress-view');
+    const bulkProgressView = document.getElementById('bulk-progress-view');
+    const successView = document.getElementById('success-view');
+    const bulkSuccessView = document.getElementById('bulk-success-view');
+    const errorView = document.getElementById('error-view');
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const passwordProtectCheckbox = document.getElementById('password-protect');
+    const passwordInput = document.getElementById('password-input');
+    const oneTimeCheckbox = document.getElementById('one-time-download');
+    
+    // Single file progress elements
+    const fileNameProgress = document.getElementById('file-name-progress');
+    const fileSizeProgress = document.getElementById('file-size-progress');
+    const encryptionStatus = document.getElementById('encryption-status');
+    const progressBar = document.getElementById('progress-bar');
+    const progressPercentage = document.getElementById('progress-percentage');
+    
+    // Bulk progress elements
+    const bulkStatus = document.getElementById('bulk-status');
+    const currentFileIndex = document.getElementById('current-file-index');
+    const totalFiles = document.getElementById('total-files');
+    const overallPercentage = document.getElementById('overall-percentage');
+    const overallProgressBar = document.getElementById('overall-progress-bar');
+    const fileProgressList = document.getElementById('file-progress-list');
+    
+    // Success view elements
+    const downloadLinkInput = document.getElementById('download-link');
+    const copyButton = document.getElementById('copy-button');
+    const copyIcon = document.getElementById('copy-icon');
+    const checkIcon = document.getElementById('check-icon');
+    const qrCodeContainer = document.getElementById('qr-code');
+    const countdownHours = document.getElementById('countdown-hours');
+    const countdownMinutes = document.getElementById('countdown-minutes');
+    const countdownSeconds = document.getElementById('countdown-seconds');
+    const killLinkButton = document.getElementById('kill-link-button');
+    const shareAnotherButton = document.getElementById('share-another-button');
+    
+    // Bulk success elements
+    const uploadedFilesCount = document.getElementById('uploaded-files-count');
+    const bulkDownloadsList = document.getElementById('bulk-downloads-list');
+    const copyAllLinksButton = document.getElementById('copy-all-links-button');
+    const downloadListButton = document.getElementById('download-list-button');
+    const bulkCountdownHours = document.getElementById('bulk-countdown-hours');
+    const bulkCountdownMinutes = document.getElementById('bulk-countdown-minutes');
+    const bulkShareAnotherButton = document.getElementById('bulk-share-another-button');
+    
+    const errorMessage = document.getElementById('error-message');
+    const tryAgainButton = document.getElementById('try-again-button');
+    let countdownInterval;
+
+    // Bulk upload state
+    let currentBulkUpload = null;
+
+    // === Bulk Upload Functions (defined early to avoid hoisting issues) ===
+    
+    // Handle multiple files upload
+    async function handleBulkFiles(files) {
+        
+        // Check file size limits (100MB per file, 500MB total)
+        const maxFileSize = 100 * 1024 * 1024; // 100MB
+        const maxTotalSize = 500 * 1024 * 1024; // 500MB
+        
+        const oversizedFiles = files.filter(file => file.size > maxFileSize);
+        const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+        
+        if (oversizedFiles.length > 0) {
+            showErrorView(`Die folgenden Dateien sind zu groß (max. 100MB): ${oversizedFiles.map(f => f.name).join(', ')}`);
+            return;
+        }
+        
+        if (totalSize > maxTotalSize) {
+            showErrorView(`Gesamtgröße aller Dateien überschreitet 500MB. Aktuell: ${(totalSize / 1024 / 1024).toFixed(1)}MB`);
+            return;
+        }
+
+        // Check password protection for all files
+        if (passwordProtectCheckbox.checked && !passwordInput.value) {
+            const modal = document.getElementById('password-warning-modal');
+            const setPasswordBtn = document.getElementById('set-password-btn');
+            const uploadWithoutPasswordBtn = document.getElementById('upload-without-password-btn');
+
+            modal.classList.remove('hidden');
+
+            setPasswordBtn.onclick = () => {
+                modal.classList.add('hidden');
+                passwordInput.focus();
+            };
+
+            uploadWithoutPasswordBtn.onclick = () => {
+                modal.classList.add('hidden');
+                passwordProtectCheckbox.checked = false;
+                passwordInput.classList.add('hidden');
+                proceedWithBulkUpload(files);
+            };
+            return;
+        }
+        
+        proceedWithBulkUpload(files);
+    }
+
+    async function proceedWithBulkUpload(files) {
+        uploadView.classList.add('hidden');
+        errorView.classList.add('hidden');
+        bulkProgressView.classList.remove('hidden');
+
+        totalFiles.textContent = files.length;
+        currentFileIndex.textContent = '0';
+
+        currentBulkUpload = {
+            files: files,
+            results: [],
+            completed: 0,
+            failed: 0
+        };
+
+        // Initialize progress list
+        fileProgressList.innerHTML = '';
+        files.forEach((file, index) => {
+            const progressItem = createFileProgressItem(file, index);
+            fileProgressList.appendChild(progressItem);
+        });
+
+        // Process files with concurrency control
+        const promises = files.map((file, index) => 
+            processSingleFile(file, index)
+        );
+        
+        try {
+            await Promise.allSettled(promises);
+            showBulkSuccess();
+        } catch (error) {
+            console.error('Bulk upload error:', error);
+            showErrorView('Fehler beim Upload mehrerer Dateien: ' + error.message);
+        }
+    }
+
+    function createFileProgressItem(file, index) {
+        const item = document.createElement('div');
+        item.className = 'bg-gray-700 rounded-lg p-3';
+        item.id = `file-progress-${index}`;
+        
+        item.innerHTML = `
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-medium text-gray-300 truncate">${file.name}</span>
+                <span class="text-xs text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="flex-1 bg-gray-600 rounded-full h-2">
+                    <div class="bg-yellow-500 h-2 rounded-full transition-all duration-300" style="width: 0%" id="progress-${index}"></div>
+                </div>
+                <span class="text-xs font-medium" id="status-${index}">Warteschlange</span>
+            </div>
+        `;
+        
+        return item;
+    }
+
+    async function processSingleFile(file, index) {
+        const progressBar = document.getElementById(`progress-${index}`);
+        const statusSpan = document.getElementById(`status-${index}`);
+        
+        try {
+            statusSpan.textContent = 'Verschlüsselung...';
+            progressBar.style.width = '10%';
+            progressBar.className = progressBar.className.replace('bg-yellow-500', 'bg-blue-500');
+
+            const usePassword = passwordProtectCheckbox.checked && passwordInput.value;
+            const fileBuffer = await file.arrayBuffer();
+            
+            progressBar.style.width = '30%';
+            const { key: fileKey, iv: fileIv } = await generateAesKey();
+            
+            progressBar.style.width = '50%';
+            const encryptedFileBuffer = await encryptData(fileBuffer, fileKey, fileIv);
+            
+            progressBar.style.width = '70%';
+            statusSpan.textContent = 'Upload...';
+
+            let keyFragment;
+            if (usePassword) {
+                const exportedFileKey = await crypto.subtle.exportKey('raw', fileKey);
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+                const passwordKey = await deriveKeyFromPassword(passwordInput.value, salt);
+                const keyIv = crypto.getRandomValues(new Uint8Array(12));
+                const encryptedKey = await encryptData(exportedFileKey, passwordKey, keyIv);
+                
+                console.log('Debug: Bulk-Upload Passwort-Verschlüsselung');
+                console.log('Debug: salt =', salt);
+                console.log('Debug: keyIv =', keyIv); 
+                console.log('Debug: encryptedKey =', encryptedKey);
+                console.log('Debug: fileIv =', fileIv);
+                
+                const saltB64 = bufferToBase64(salt.buffer);
+                const keyIvB64 = bufferToBase64(keyIv.buffer);
+                const encryptedKeyB64 = bufferToBase64(encryptedKey);
+                const fileIvB64 = bufferToBase64(fileIv.buffer);
+                
+                console.log('Debug: saltB64 =', saltB64);
+                console.log('Debug: keyIvB64 =', keyIvB64);
+                console.log('Debug: encryptedKeyB64 =', encryptedKeyB64);
+                console.log('Debug: fileIvB64 =', fileIvB64);
+                
+                keyFragment = `p.${saltB64}.${keyIvB64}.${encryptedKeyB64}.${fileIvB64}`;
+                console.log('Debug: keyFragment =', keyFragment);
+            } else {
+                const exportedFileKey = await crypto.subtle.exportKey('raw', fileKey);
+                console.log('Debug: Bulk-Upload ohne Passwort');
+                console.log('Debug: exportedFileKey =', exportedFileKey);
+                console.log('Debug: fileIv =', fileIv);
+                
+                const keyB64 = bufferToBase64(exportedFileKey);
+                const fileIvB64 = bufferToBase64(fileIv.buffer);
+                
+                console.log('Debug: keyB64 =', keyB64);
+                console.log('Debug: fileIvB64 =', fileIvB64);
+                
+                keyFragment = `${keyB64}.${fileIvB64}`;
+                console.log('Debug: keyFragment =', keyFragment);
+            }
+
+            const formData = new FormData();
+            formData.append('file', new Blob([encryptedFileBuffer]), file.name);
+            formData.append('original_filename', file.name);
+            if (oneTimeCheckbox.checked) formData.append('oneTimeDownload', 'true');
+
+            const response = await fetch('upload.php', { method: 'POST', body: formData });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.status !== 'success') {
+                throw new Error(result.message || 'Unbekannter Fehler');
+            }
+
+            progressBar.style.width = '100%';
+            progressBar.className = progressBar.className.replace('bg-blue-500', 'bg-green-500');
+            statusSpan.textContent = '✓ Abgeschlossen';
+
+            const downloadUrl = `${result.downloadUrl}#${keyFragment}`;
+            
+            currentBulkUpload.results.push({
+                filename: file.name,
+                downloadUrl: downloadUrl,
+                deleteUrl: result.deleteUrl,
+                expiresAt: result.expiresAt,
+                success: true
+            });
+
+            currentBulkUpload.completed++;
+            updateOverallProgress();
+
+        } catch (error) {
+            progressBar.style.width = '100%';
+            progressBar.className = progressBar.className.replace('bg-blue-500', 'bg-red-500');
+            statusSpan.textContent = '✗ Fehler';
+            
+            currentBulkUpload.results.push({
+                filename: file.name,
+                error: error.message,
+                success: false
+            });
+
+            currentBulkUpload.failed++;
+            updateOverallProgress();
+        }
+    }
+
+    function updateOverallProgress() {
+        const total = currentBulkUpload.files.length;
+        const completed = currentBulkUpload.completed + currentBulkUpload.failed;
+        const percentage = Math.round((completed / total) * 100);
+        
+        currentFileIndex.textContent = completed;
+        overallPercentage.textContent = `${percentage}%`;
+        overallProgressBar.style.width = `${percentage}%`;
+    }
+
+    function showBulkSuccess() {
+        bulkProgressView.classList.add('hidden');
+        bulkSuccessView.classList.remove('hidden');
+        
+        const successfulUploads = currentBulkUpload.results.filter(r => r.success);
+        uploadedFilesCount.textContent = successfulUploads.length;
+        
+        // Populate download links
+        bulkDownloadsList.innerHTML = '';
+        currentBulkUpload.results.forEach((result, index) => {
+            const linkItem = createDownloadLinkItem(result, index);
+            bulkDownloadsList.appendChild(linkItem);
+        });
+
+        // Start countdown for bulk uploads
+        startBulkCountdown();
+    }
+
+    function createDownloadLinkItem(result, index) {
+        const item = document.createElement('div');
+        item.className = `rounded-lg p-3 ${result.success ? 'bg-gray-700' : 'bg-red-900/30'}`;
+        
+        if (result.success) {
+            item.innerHTML = `
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-gray-300 truncate">${result.filename}</span>
+                    <span class="text-xs text-green-400">✓ Erfolgreich</span>
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" value="${result.downloadUrl}" readonly 
+                           class="flex-1 bg-gray-800 border-gray-600 rounded px-2 py-1 text-xs text-gray-300 border">
+                    <button onclick="copyToClipboard('${result.downloadUrl}')" 
+                            class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded transition-all">
+                        Kopieren
+                    </button>
+                </div>
+            `;
+        } else {
+            item.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium text-gray-300 truncate">${result.filename}</span>
+                    <span class="text-xs text-red-400">✗ Fehler</span>
+                </div>
+                <p class="text-xs text-red-300 mt-1">${result.error}</p>
+            `;
+        }
+        
+        return item;
+    }
+
+    function startBulkCountdown() {
+        clearInterval(countdownInterval);
+        
+        // Use the expiration time from the first successful upload
+        const firstSuccessfulUpload = currentBulkUpload.results.find(r => r.success && r.expiresAt);
+        if (!firstSuccessfulUpload) {
+            // Fallback: Calculate 24 hours from now
+            const endTime = new Date(Date.now() + 24 * 60 * 60 * 1000).getTime();
+            startBulkCountdownTimer(endTime);
+            return;
+        }
+        
+        const endTime = new Date(firstSuccessfulUpload.expiresAt).getTime();
+        startBulkCountdownTimer(endTime);
+    }
+    
+    function startBulkCountdownTimer(endTime) {
+        countdownInterval = setInterval(() => {
+            const now = new Date().getTime();
+            const distance = endTime - now;
+            
+            if (distance < 0) {
+                clearInterval(countdownInterval);
+                bulkCountdownHours.textContent = '00';
+                bulkCountdownMinutes.textContent = '00';
+                return;
+            }
+            
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            
+            bulkCountdownHours.textContent = String(hours).padStart(2, '0');
+            bulkCountdownMinutes.textContent = String(minutes).padStart(2, '0');
+        }, 60000); // Update every minute
+    }
+
+    async function copyAllLinks() {
+        const successfulLinks = currentBulkUpload.results
+            .filter(r => r.success)
+            .map(r => `${r.filename}: ${r.downloadUrl}`)
+            .join('\n');
+
+        try {
+            await navigator.clipboard.writeText(successfulLinks);
+            
+            const originalText = copyAllLinksButton.innerHTML;
+            copyAllLinksButton.innerHTML = '✓ Kopiert!';
+            copyAllLinksButton.style.backgroundColor = '#059669';
+            
+            setTimeout(() => {
+                copyAllLinksButton.innerHTML = originalText;
+                copyAllLinksButton.style.backgroundColor = '';
+            }, 2000);
+        } catch (err) {
+            alert('Kopieren fehlgeschlagen. Bitte manuell kopieren.');
+        }
+    }
+
+    function downloadLinksList() {
+        const content = currentBulkUpload.results
+            .filter(r => r.success)
+            .map(r => `${r.filename}: ${r.downloadUrl}`)
+            .join('\n');
+
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `cactusdrop-links-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // Global function for individual copy buttons
+    window.copyToClipboard = async function(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch (err) {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+        }
+    };
+
+    // Robust Base64 encoding function for ArrayBuffers
+    function arrayBufferToBase64(buffer) {
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        const chunkSize = 0x8000; // 32KB chunks to avoid call stack limits
+        
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+            const chunk = bytes.subarray(i, i + chunkSize);
+            binary += String.fromCharCode.apply(null, chunk);
+        }
+        
+        return btoa(binary);
+    }
+
+    // === Event Listeners ===
+    passwordProtectCheckbox.addEventListener('change', () => {
+        passwordInput.classList.toggle('hidden', !passwordProtectCheckbox.checked);
+        if (passwordProtectCheckbox.checked) passwordInput.focus();
+    });
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', e => { e.preventDefault(); dropZone.classList.remove('dragover'); });
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length === 1) {
+                handleFile(files[0]);
+            } else {
+                handleBulkFiles(files);
+            }
+        }
+    });
+    fileInput.addEventListener('change', e => {
+        if (e.target.files.length > 0) {
+            const files = Array.from(e.target.files);
+            if (files.length === 1) {
+                handleFile(files[0]);
+            } else {
+                handleBulkFiles(files);
+            }
+        }
+    });
+    copyButton.addEventListener('click', async () => {
+        try {
+            // Moderne Clipboard API verwenden
+            await navigator.clipboard.writeText(downloadLinkInput.value);
+            
+            // Visuelles Feedback
+            copyIcon.classList.add('hidden'); 
+            checkIcon.classList.remove('hidden');
+            copyButton.style.backgroundColor = '#059669'; // Grün für Erfolg
+            
+            setTimeout(() => { 
+                copyIcon.classList.remove('hidden'); 
+                checkIcon.classList.add('hidden'); 
+                copyButton.style.backgroundColor = ''; // Zurück zur Standard-Farbe
+            }, 2000);
+        } catch (err) {
+            // Fallback für ältere Browser
+            try {
+                downloadLinkInput.select();
+                downloadLinkInput.setSelectionRange(0, 99999); // Für mobile Geräte
+                document.execCommand('copy');
+                
+                copyIcon.classList.add('hidden'); 
+                checkIcon.classList.remove('hidden');
+                setTimeout(() => { 
+                    copyIcon.classList.remove('hidden'); 
+                    checkIcon.classList.add('hidden'); 
+                }, 2000);
+            } catch (fallbackErr) {
+                alert('Link kopieren fehlgeschlagen. Bitte manuell markieren und kopieren.');
+            }
+        }
+    });
+    shareAnotherButton.addEventListener('click', resetApp);
+    tryAgainButton.addEventListener('click', resetApp);
+    
+    // Bulk upload event listeners
+    bulkShareAnotherButton.addEventListener('click', resetApp);
+    copyAllLinksButton.addEventListener('click', copyAllLinks);
+    downloadListButton.addEventListener('click', downloadLinksList);
+
+    // === Upload- und Verschlüsselungs-Logik ===
+
+    // Wird aufgerufen, wenn eine Datei ausgewählt wird
+    function handleFile(file) {
+        // PRÜFUNG: Wenn Passwortschutz aktiv ist, aber das Feld leer ist
+        if (passwordProtectCheckbox.checked && !passwordInput.value) {
+            const modal = document.getElementById('password-warning-modal');
+            const setPasswordBtn = document.getElementById('set-password-btn');
+            const uploadWithoutPasswordBtn = document.getElementById('upload-without-password-btn');
+
+            modal.classList.remove('hidden');
+
+            setPasswordBtn.onclick = () => {
+                modal.classList.add('hidden');
+                passwordInput.focus();
+            };
+
+            uploadWithoutPasswordBtn.onclick = () => {
+                modal.classList.add('hidden');
+                passwordProtectCheckbox.checked = false; // Deaktiviere Schutz für diesen Upload
+                passwordInput.classList.add('hidden');
+                proceedWithUpload(file);
+            };
+            return; // Stoppt den Prozess, bis der Benutzer eine Wahl trifft
+        }
+        
+        // Wenn alles ok ist, fahre direkt fort
+        proceedWithUpload(file);
+    }
+
+    const bufferToBase64 = (buffer) => btoa(String.fromCharCode(...new Uint8Array(buffer)));
+
+    // Haupt-Funktion für Verschlüsselung und Upload
+    async function proceedWithUpload(file) {
+        uploadView.classList.add('hidden');
+        errorView.classList.add('hidden');
+        progressView.classList.remove('hidden');
+
+        fileNameProgress.textContent = file.name;
+        fileSizeProgress.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
+
+        const usePassword = passwordProtectCheckbox.checked && passwordInput.value;
+
+        try {
+            encryptionStatus.textContent = 'Lese Datei...';
+            const fileBuffer = await file.arrayBuffer();
+
+            encryptionStatus.textContent = 'Generiere Datei-Schlüssel...';
+            const { key: fileKey, iv: fileIv } = await generateAesKey();
+            
+            encryptionStatus.textContent = 'Verschlüssele Datei im Browser...';
+            const encryptedFileBuffer = await encryptData(fileBuffer, fileKey, fileIv);
+            const encryptedBlob = new Blob([encryptedFileBuffer], { type: 'application/octet-stream' });
+
+            let keyFragment;
+            if (usePassword) {
+                encryptionStatus.textContent = 'Verschlüssele Schlüssel mit Passwort...';
+                const exportedFileKey = await crypto.subtle.exportKey('raw', fileKey);
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+                const passwordKey = await deriveKeyFromPassword(passwordInput.value, salt);
+                const keyIv = crypto.getRandomValues(new Uint8Array(12));
+                const encryptedKey = await encryptData(exportedFileKey, passwordKey, keyIv);
+                
+                keyFragment = `p.${bufferToBase64(salt.buffer)}.${bufferToBase64(keyIv.buffer)}.${bufferToBase64(encryptedKey)}.${bufferToBase64(fileIv.buffer)}`;
+            } else {
+                encryptionStatus.textContent = 'Bereite sicheren Link vor...';
+                const exportedFileKey = await crypto.subtle.exportKey('raw', fileKey);
+                keyFragment = `${bufferToBase64(exportedFileKey)}.${bufferToBase64(fileIv.buffer)}`;
+            }
+            
+            encryptionStatus.textContent = 'Lade verschlüsselte Daten hoch...';
+            const serverResponse = await uploadFile(encryptedBlob, file.name, oneTimeCheckbox.checked);
+
+            const finalUrl = `${serverResponse.downloadUrl}#${keyFragment}`;
+            showSuccessView(finalUrl, serverResponse.deleteUrl, serverResponse.expiresAt);
+
+        } catch (err) {
+            console.error('E2EE process failed:', err);
+            showErrorView(err.message || 'Ein Fehler während der Verschlüsselung ist aufgetreten.');
+        }
+    }
+
+    async function generateAesKey() {
+        const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        return { key, iv };
+    }
+    
+    async function deriveKeyFromPassword(password, salt) {
+        const encoder = new TextEncoder();
+        const keyMaterial = await crypto.subtle.importKey('raw', encoder.encode(password), { name: 'PBKDF2' }, false, ['deriveKey']);
+        return await crypto.subtle.deriveKey(
+            { name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
+            keyMaterial,
+            { name: 'AES-GCM', length: 256 },
+            true,
+            ['encrypt', 'decrypt']
+        );
+    }
+    
+    async function encryptData(data, key, iv) {
+        return await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, data);
+    }
+
+    async function uploadFile(blob, originalFilename, isOneTime) {
+        return new Promise((resolve, reject) => {
+            try {
+                const formData = new FormData();
+                formData.append('file', blob, originalFilename);
+                if (isOneTime) formData.append('oneTimeDownload', 'true');
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', 'upload.php', true);
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    const percentComplete = (event.loaded / event.total) * 100;
+                    progressBar.style.width = `${percentComplete}%`;
+                    progressPercentage.textContent = `${Math.round(percentComplete)}%`;
+                }
+            };
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    try {
+                        console.log('Server Response:', xhr.responseText);
+                        const response = JSON.parse(xhr.responseText);
+                        response.status === 'success' ? resolve(response) : reject(new Error(response.message || 'Serverfehler.'));
+                    } catch (e) {
+                        console.error('JSON Parse Error:', e);
+                        console.error('Raw Response:', xhr.responseText);
+                        reject(new Error('Ungültige Serverantwort: ' + xhr.responseText.substring(0, 100)));
+                    }
+                } else {
+                    console.error('HTTP Error:', xhr.status, xhr.statusText);
+                    console.error('Response:', xhr.responseText);
+                    reject(new Error(`Serverfehler: ${xhr.statusText} (${xhr.status})`));
+                }
+            };
+            xhr.onerror = () => reject(new Error('Netzwerkfehler.'));
+            xhr.send(formData);
+            
+            } catch (error) {
+                reject(new Error('Upload error: ' + error.message));
+            }
+        });
+    }
+
+    // === Ansichts- und Hilfsfunktionen ===
+    function showSuccessView(finalUrl, deleteUrl, expiresAt) {
+        progressView.classList.add('hidden');
+        successView.classList.remove('hidden');
+        downloadLinkInput.value = finalUrl;
+        killLinkButton.href = deleteUrl;
+        
+        qrCodeContainer.innerHTML = '';
+        const qrImg = document.createElement('img');
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(finalUrl)}&bgcolor=ffffff`;
+        qrImg.alt = 'QR Code';
+        qrImg.onerror = () => qrCodeContainer.innerHTML = '<p class="text-xs text-red-400">QR-Code konnte nicht geladen werden.</p>';
+        qrCodeContainer.appendChild(qrImg);
+        
+        startCountdown(expiresAt);
+    }
+    function showErrorView(message) {
+        progressView.classList.add('hidden');
+        errorView.classList.remove('hidden');
+        errorMessage.textContent = message;
+    }
+    function startCountdown(expiresAt) {
+        const endTime = new Date(expiresAt).getTime();
+        countdownInterval = setInterval(() => {
+            const now = new Date().getTime();
+            const distance = endTime - now;
+            if (distance < 0) {
+                clearInterval(countdownInterval);
+                countdownHours.textContent = '00'; countdownMinutes.textContent = '00'; countdownSeconds.textContent = '00';
+                return;
+            }
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            countdownHours.textContent = String(hours).padStart(2, '0');
+            countdownMinutes.textContent = String(minutes).padStart(2, '0');
+            countdownSeconds.textContent = String(seconds).padStart(2, '0');
+        }, 1000);
+    }
+
+    function resetApp() {
+        clearInterval(countdownInterval);
+        successView.classList.add('hidden');
+        bulkSuccessView.classList.add('hidden');
+        progressView.classList.add('hidden');
+        bulkProgressView.classList.add('hidden');
+        errorView.classList.add('hidden');
+        uploadView.classList.remove('hidden');
+        fileInput.value = '';
+        passwordInput.value = '';
+        passwordInput.classList.add('hidden');
+        passwordProtectCheckbox.checked = false;
+        oneTimeCheckbox.checked = false;
+        progressBar.style.width = '0%';
+        progressPercentage.textContent = '0%';
+        overallProgressBar.style.width = '0%';
+        overallPercentage.textContent = '0%';
+        currentBulkUpload = null;
+        fileProgressList.innerHTML = '';
+        bulkDownloadsList.innerHTML = '';
+    }
+});
+</script>
+
+<!-- PWA Service Worker & Installations-Logik -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').then(registration => {
+        console.log('ServiceWorker registration successful');
+      }, err => {
+        console.log('ServiceWorker registration failed: ', err);
+      });
+    });
+  }
+
+  // Installations-Logik
+  const installContainer = document.getElementById('install-container');
+  const installButton = document.getElementById('install-button');
+  const iosInstallModal = document.getElementById('ios-install-modal');
+  const closeIosModal = document.getElementById('close-ios-modal');
+  let deferredPrompt;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!window.matchMedia('(display-mode: standalone)').matches) {
+        installContainer.classList.remove('hidden');
+    }
+  });
+
+  installButton.addEventListener('click', async () => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    
+    if (isIOS) {
+        iosInstallModal.classList.remove('hidden');
+    } else if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response to the install prompt: ${outcome}`);
+        deferredPrompt = null;
+        installContainer.classList.add('hidden');
+    } else {
+        alert('Um diese App zu installieren, suchen Sie bitte die Option "Zum Startbildschirm hinzufügen" in den Einstellungen Ihres Browsers.');
+    }
+  });
+
+  closeIosModal.addEventListener('click', () => {
+      iosInstallModal.classList.add('hidden');
+  });
+
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+      installContainer.classList.add('hidden');
+  } else {
+      installContainer.classList.remove('hidden');
+  }
+
+</script>
+
+</body>
+</html>
