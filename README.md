@@ -1,15 +1,15 @@
-# 🌵 CactusDrop v0.3.0
+# 🌵 CactusDrop v0.3.5
 
 **Sicheres & anonymes Filesharing mit End-to-End-Verschlüsselung**
 
 CactusDrop ist eine selbst-gehostete, sichere File-Sharing-Anwendung, die Dateien mit client-seitiger End-to-End-Verschlüsselung teilt. Alle Dateien werden automatisch nach 24 Stunden gelöscht.
 
-![Version](https://img.shields.io/badge/version-0.3.0-green)
+![Version](https://img.shields.io/badge/version-0.3.5-green)
 ![PHP](https://img.shields.io/badge/PHP-7.4+-blue)
 ![Security](https://img.shields.io/badge/security-hardened-red)
 ![License](https://img.shields.io/badge/license-MIT-brightgreen)
 
-> **🆕 Version 0.3.0 Update:** Moderner 3-Schritt Webinstaller mit AJAX-Datenbankprüfung und Konfetti-Animation!
+> **🆕 Version 0.3.5 Update:** Vollständiges Multi-Language System (DE/EN), GDPR/DSGVO-Compliance & Admin-Panel mit File Management, Statistics und Security!
 
 ## ✨ Features
 
@@ -33,7 +33,9 @@ CactusDrop ist eine selbst-gehostete, sichere File-Sharing-Anwendung, die Dateie
 - **QR-Code Generation** für einfaches Teilen
 - **Responsive Design** - optimiert für Mobile und Desktop
 - **Dark Mode** Design
-- **Deutsche Lokalisierung**
+- **Multi-Language Support** (Deutsch/English)
+- **GDPR/DSGVO Compliance** mit Privacy-Controls
+- **Admin-Panel** mit File Management & Statistics
 
 ### 🛠 Technisch
 - **Keine Registrierung** erforderlich
@@ -112,14 +114,26 @@ define('UPLOAD_DIR', __DIR__ . '/uploads/');
 
 ```
 cactusdrop/ (erstellt vom Installer)
-├── index.html                    # Haupt-Anwendung (Multi-Upload-Interface)
+├── index.php                     # Haupt-Anwendung (Multi-Upload-Interface)
 ├── upload.php                    # Upload-Handler (kompatible Version)
-├── download.php                  # Download-Handler (kompatible Version)
+├── download.php                  # Download-Handler mit Multi-Language
 ├── delete.php                    # Datei-Löschung 
 ├── cleanup.php                   # Cronjob für automatische Bereinigung
-├── config.php                    # Konfigurationsdatei (auto-generiert)
-├── security.php                  # Zentrales Sicherheitsmodul
-├── csrf_token.php                # CSRF-Token API
+├── config-sample.php             # Konfigurationsdatei Template
+├── languages.php                 # Multi-Language Support (DE/EN)
+├── privacy.php                   # GDPR/DSGVO Privacy Functions
+├── admin.php                     # Admin-Panel Haupt-Interface
+├── admin_dashboard.php           # Admin Dashboard mit Statistiken  
+├── admin_files.php               # File Management Module
+├── admin_statistics.php          # Analytics & Statistics Module
+├── admin_privacy.php             # GDPR/Privacy Controls
+├── admin_security.php            # Security Management
+├── admin_settings.php            # System Settings
+├── admin_schema.sql              # Database Schema für Admin-Panel
+├── upgrade_v040.php              # Database Upgrade Script
+├── privacy_cleanup.php           # GDPR-konforme Datenbereinigung
+├── privacy_policy.php            # Privacy Policy Generator
+├── privacy_rights.php            # GDPR Rights Management
 ├── manifest.json                 # PWA-Manifest
 ├── sw.js                         # Service Worker für PWA
 └── uploads/                      # Verschlüsselte Dateien (vom Web verborgen)
@@ -331,12 +345,47 @@ Bei Problemen oder Fragen:
 - [x] **Moderner Webinstaller** ✅ (v0.3.0)
 - [x] **AJAX-Datenbankprüfung** ✅ (v0.3.0)
 - [x] **Konfetti-Animation** ✅ (v0.3.0)
-- [ ] Admin-Panel für Statistiken und Security-Logs
+- [x] **Admin-Panel für Statistiken und Security-Logs** ✅ (v0.3.5)
+- [x] **Multi-Language-Support** ✅ (v0.3.5)
+- [x] **GDPR/DSGVO Compliance** ✅ (v0.3.5)
+- [x] **File Management System** ✅ (v0.3.5)
 - [ ] Erweiterte Ablaufzeit-Optionen
-- [ ] Multi-Language-Support
 - [ ] API-Endpoints
 - [ ] Docker-Container
 
 ---
 
-**CactusDrop v0.3.0** - Jetzt mit dem modernsten Webinstaller! 🌵✨
+**CactusDrop v0.3.5** - Jetzt mit vollständigem Multi-Language Support, GDPR-Compliance und Admin-Panel! 🌵✨
+
+## 🆕 Changelog v0.3.5
+
+### ✅ Neu hinzugefügt
+- **🌍 Multi-Language System** - Vollständige DE/EN Unterstützung
+- **🛡️ GDPR/DSGVO Compliance** - Privacy-by-Design Implementation
+- **👨‍💼 Admin-Panel** - Umfassendes Management-Interface
+- **📁 File Management** - Upload-Verwaltung mit Statistiken  
+- **📊 Statistics Module** - Analytics und System-Übersicht
+- **🔒 Privacy Controls** - GDPR-konforme Datenhandhabung
+- **🧹 Automatic Cleanup** - GDPR-konforme Datenbereinigung
+
+### 🌍 Multi-Language Features  
+- **Dynamische Sprachauswahl** - DE/EN per Dropdown
+- **Vollständige Lokalisierung** - Alle UI-Elemente übersetzt
+- **Admin-Panel Translation** - Komplettes Admin-Interface
+- **Error Messages** - Lokalisierte Fehlermeldungen
+- **Cookie-basierte Persistenz** - Sprachauswahl wird gespeichert
+
+### 🛡️ GDPR/DSGVO Features
+- **IP-Anonymisierung** - Automatische IPv4/IPv6 Anonymisierung  
+- **Data Minimization** - Minimale Datenspeicherung
+- **Automatic Cleanup** - Zeitgesteuerte Datenbereinigung
+- **Privacy Dashboard** - Datenschutz-Übersicht für Admins
+- **Consent Management** - Transparent Privacy-Controls
+
+### 👨‍💼 Admin-Panel Features
+- **Dashboard** - Übersicht aller System-Statistiken
+- **File Management** - Upload-Verwaltung mit Lösch-Funktion
+- **Statistics** - Detaillierte Analytics und Charts
+- **Security Logs** - GDPR-konforme Security-Ereignisse
+- **Privacy Settings** - Datenschutz-Konfiguration
+- **Multi-Language Admin** - Admin-Panel komplett übersetzt
