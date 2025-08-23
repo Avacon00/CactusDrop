@@ -2,7 +2,32 @@
 // delete.php - Sicheres Löschen von Dateien
 
 require_once 'config.php';
-require_once 'security.php';
+
+// Simple security functions
+class CactusDropSecurity {
+    public static function validateParameter($value, $type, $options = null, $required = false) {
+        if (empty($value)) {
+            return ['valid' => !$required, 'value' => $value];
+        }
+        
+        switch ($type) {
+            case 'file_id':
+                // 16-character hex string
+                if (preg_match('/^[a-f0-9]{16}$/', $value)) {
+                    return ['valid' => true, 'value' => $value];
+                }
+                break;
+            case 'token':
+                // 64-character hex string
+                if (preg_match('/^[a-f0-9]{64}$/', $value)) {
+                    return ['valid' => true, 'value' => $value];
+                }
+                break;
+        }
+        
+        return ['valid' => false, 'value' => null];
+    }
+}
 
 // Security Headers
 header('X-Content-Type-Options: nosniff');
